@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sipesantren/core/providers/user_provider.dart';
-import 'package:sipesantren/features/admin/presentation/weight_config_page.dart'; // New import // Import userProvider
+import 'package:sipesantren/features/admin/presentation/weight_config_page.dart';
+import 'package:sipesantren/features/admin/presentation/user_management_page.dart'; // New import // Import userProvider
 import 'package:sipesantren/features/auth/presentation/login_page.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -41,7 +42,8 @@ class DashboardPage extends ConsumerWidget {
                 title: 'Kelola Pengguna',
                 subtitle: 'Tambah, edit, atau hapus akun pengguna.',
                 onTap: () {
-                  // TODO: Implement user management for Admin
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const UserManagementPage()));
                 },
               ),
             ],
