@@ -4,14 +4,16 @@ class SantriModel {
   final String id;
   final String nis;
   final String nama;
-  final String kamar;
+  final String kamarGedung; // New field for building
+  final int kamarNomor;    // New field for room number
   final int angkatan;
 
   SantriModel({
     required this.id,
     required this.nis,
     required this.nama,
-    required this.kamar,
+    required this.kamarGedung,
+    required this.kamarNomor,
     required this.angkatan,
   });
 
@@ -21,7 +23,8 @@ class SantriModel {
       id: doc.id,
       nis: data['nis'] ?? '',
       nama: data['nama'] ?? '',
-      kamar: data['kamar'] ?? '',
+      kamarGedung: data['kamarGedung'] ?? '', // Updated field
+      kamarNomor: data['kamarNomor'] ?? 0,    // Updated field
       angkatan: data['angkatan'] ?? 0,
     );
   }
@@ -30,7 +33,8 @@ class SantriModel {
     return {
       'nis': nis,
       'nama': nama,
-      'kamar': kamar,
+      'kamarGedung': kamarGedung, // Updated field
+      'kamarNomor': kamarNomor,    // Updated field
       'angkatan': angkatan,
     };
   }

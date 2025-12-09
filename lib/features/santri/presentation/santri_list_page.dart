@@ -226,7 +226,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
                   final santri = SantriModel.fromFirestore(doc); // Create SantriModel for filtering
                   final matchesSearch = santri.nama.toLowerCase().contains(_searchQuery) || 
                                       santri.nis.contains(_searchQuery);
-                  final matchesKamar = _selectedKamar == 'Semua' || santri.kamar == _selectedKamar;
+                  final matchesKamar = _selectedKamar == 'Semua' || (santri.kamarGedung + '-' + santri.kamarNomor.toString()) == _selectedKamar;
                   final matchesAngkatan = _selectedAngkatan == 'Semua' || santri.angkatan.toString() == _selectedAngkatan;
                   return matchesSearch && matchesKamar && matchesAngkatan;
                 }).toList();
@@ -262,7 +262,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('NIS: ${santri.nis} | Kamar: ${santri.kamar}'),
+                            Text('NIS: ${santri.nis} | Kamar: ${santri.kamarGedung}-${santri.kamarNomor}'),
                             if (hasPendingWrites)
                               const Row(
                                 children: [

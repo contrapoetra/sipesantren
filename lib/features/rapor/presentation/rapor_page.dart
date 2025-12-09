@@ -168,7 +168,7 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
                     const SizedBox(height: 16),
                     _buildInfoRow('Nama Santri', widget.santri!.nama),
                     _buildInfoRow('NIS', widget.santri!.nis),
-                    _buildInfoRow('Kamar', widget.santri!.kamar),
+                    _buildInfoRow('Kamar', '${widget.santri!.kamarGedung}-${widget.santri!.kamarNomor}'),
                     _buildInfoRow('Angkatan', widget.santri!.angkatan.toString()),
                   ],
                 ),
@@ -362,7 +362,7 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
               pw.SizedBox(height: 20),
               pw.Text('Nama: ${widget.santri!.nama}'),
               pw.Text('NIS: ${widget.santri!.nis}'),
-              pw.Text('Kamar: ${widget.santri!.kamar}'),
+              pw.Text('Kamar: ${widget.santri!.kamarGedung}-${widget.santri!.kamarNomor}'),
               pw.SizedBox(height: 30),
               
               pw.Table.fromTextArray(context: context, data: <List<String>>[
