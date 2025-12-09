@@ -10,6 +10,7 @@ environment:
 
 dependencies:
   cloud_firestore: ^6.1.0
+  crypto: ^3.0.7
   firebase_analytics: ^12.0.4
   firebase_core: ^4.2.1
   flutter:

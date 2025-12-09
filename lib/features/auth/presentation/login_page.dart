@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:sipesantren/features/santri/presentation/santri_list_page.dart';
+import 'package:sipesantren/firebase_services.dart';
+import 'package:sipesantren/crypt.dart';
 import 'register_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -18,6 +20,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool loading = false;
+  final FirebaseServices db = FirebaseServices();
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +42,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Colors.blue[50],
                         borderRadius: BorderRadius.circular(40),
                       ),
                       child: const Icon(Icons.mosque,
-                          size: 40, color: Colors.blue),
+                          size: 100, color: Colors.black),
                     ),
                     const SizedBox(height: 20),
                     const Text(
@@ -50,12 +53,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Pesantren X',
+                      'Mahad Sunan Ampel Al-Aly',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey,
@@ -124,24 +127,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (_formKey.currentState!.validate()) {
-                              // Navigate to Santri List
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SantriListPage(),
-                                ),
-                              );
+                              setState(() {
+                                loading = true;
+                              });
+                              bool userExists = await db.getUser(_emailController.text, _passwordController.text);
+                              setState(() {
+                                loading = false;
+                                if (userExists) {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SantriListPage(),
+                                    ),
+                                  );
+                                }
+                              });
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: Colors.black,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
+                          child: loading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator()) : const Text(
                             'MASUK',
                             style: TextStyle(
                               color: Colors.white,

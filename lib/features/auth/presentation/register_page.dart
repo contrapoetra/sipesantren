@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:sipesantren/firebase_services.dart';
+import 'package:sipesantren/crypt.dart';
 import 'login_page.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -40,11 +41,10 @@ class _LoginPageState extends ConsumerState<RegisterPage> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Colors.blue[50],
                         borderRadius: BorderRadius.circular(40),
                       ),
                       child: const Icon(Icons.mosque,
-                          size: 40, color: Colors.blue),
+                          size: 100, color: Colors.black),
                     ),
                     const SizedBox(height: 20),
                     const Text(
@@ -52,12 +52,12 @@ class _LoginPageState extends ConsumerState<RegisterPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Pesantren X',
+                      'Mahad Sunan Ampel Al-Aly',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey,
@@ -95,7 +95,7 @@ class _LoginPageState extends ConsumerState<RegisterPage> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: _selectedRole,
+                          initialValue: _selectedRole,
                           items: const [
                             DropdownMenuItem(
                                 value: 'Admin', child: Text('Admin')),
@@ -184,7 +184,7 @@ class _LoginPageState extends ConsumerState<RegisterPage> {
                               bool createUser = await db.createUser(
                                 _nameController.text,
                                 _emailController.text,
-                                _passwordController.text,
+                                PasswordHandler.hashPassword(_passwordController.text, PasswordHandler.generateSalt()),
                                 _selectedRole
                               );
                               setState(() {
@@ -201,12 +201,12 @@ class _LoginPageState extends ConsumerState<RegisterPage> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: Colors.black,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: loading ? const CircularProgressIndicator() : const Text(
+                          child: loading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator()) : const Text(
                             'DAFTAR',
                             style: TextStyle(
                               color: Colors.white,
