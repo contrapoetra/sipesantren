@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // New import
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:sipesantren/core/models/penilaian_model.dart';
 import 'package:sipesantren/core/models/santri_model.dart';
 import 'package:sipesantren/core/repositories/penilaian_repository.dart';
 import 'package:sipesantren/core/services/grading_service.dart';
@@ -14,7 +13,8 @@ import 'package:path_provider/path_provider.dart'; // New import
 import 'package:sipesantren/core/models/weight_config_model.dart'; // New import
 import 'package:sipesantren/core/repositories/weight_config_repository.dart'; // New import
 
-class RaporPage extends ConsumerStatefulWidget { // Changed to ConsumerStatefulWidget
+class RaporPage extends ConsumerStatefulWidget {
+ // Changed to ConsumerStatefulWidget
   final SantriModel? santri;
   const RaporPage({super.key, this.santri});
 
@@ -47,22 +47,19 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
     final _weightRepository = ref.read(weightConfigRepositoryProvider); // Get from provider
     // Fetch weights first
     await _weightRepository.initializeWeightConfig(); // Ensure default exists
-    _weights = await _weightRepository.getWeightConfig().first; // Synchronously get the first value
+    // getWeightConfig returns Stream, so .first is correct
+    _weights = await _weightRepository.getWeightConfig().first; 
 
     // Fetch all data
-    final tahfidzList = await _repository.getTahfidzBySantri(santriId).first;
-    final mapelList = await _repository.getMapelBySantri(santriId).first;
-    final akhlakList = await _repository.getAkhlakBySantri(santriId).first;
-    final kehadiranList = await _repository.getKehadiranBySantri(santriId).first;
+    // Repositories return Future<List> now, so we await them directly.
+    final tahfidzList = await _repository.getTahfidzBySantri(santriId);
+    final mapelList = await _repository.getMapelBySantri(santriId);
+    final akhlakList = await _repository.getAkhlakBySantri(santriId);
+    final kehadiranList = await _repository.getKehadiranBySantri(santriId);
 
     // Extract latest Akhlak note if available
     if (akhlakList.isNotEmpty) {
-      // Assuming sorting by date is not necessary for "latest" here,
-      // as `akhlakList` comes from a stream which might not guarantee order.
-      // For simplicity, let's take the first one or assume the stream provides latest first.
-      // If order matters, we'd need a timestamp in PenilaianAkhlak and sort.
-      // For now, let's just take the first available.
-      _akhlakCatatan = akhlakList.last.catatan; // Taking the last one assuming more recent.
+      _akhlakCatatan = akhlakList.last.catatan; 
     }
 
     // Calculate
@@ -78,20 +75,22 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
       bahasaArab: bahasaArabScore,
       akhlak: akhlakScore,
       kehadiran: kehadiranScore,
-      weights: _weights!, // Pass the fetched weights
+      weights: _weights!, 
     );
 
-    setState(() {
-      _scores = {
-        'Tahfidz': tahfidzScore,
-        'Fiqh': fiqhScore,
-        'Bahasa Arab': bahasaArabScore,
-        'Akhlak': akhlakScore,
-        'Kehadiran': kehadiranScore,
-      };
-      _finalGrade = finalResult;
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _scores = {
+          'Tahfidz': tahfidzScore,
+          'Fiqh': fiqhScore,
+          'Bahasa Arab': bahasaArabScore,
+          'Akhlak': akhlakScore,
+          'Kehadiran': kehadiranScore,
+        };
+        _finalGrade = finalResult;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -365,7 +364,7 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
               pw.Text('Kamar: ${widget.santri!.kamarGedung}-${widget.santri!.kamarNomor}'),
               pw.SizedBox(height: 30),
               
-              pw.Table.fromTextArray(context: context, data: <List<String>>[
+              pw.TableHelper.fromTextArray(context: context, data: <List<String>>[
                 <String>['Mata Pelajaran', 'Nilai', 'Bobot'],
                 <String>['Tahfidz', '${_scores['Tahfidz']}', '${(_weights!.tahfidz * 100).toStringAsFixed(0)}%'],
                 <String>['Fiqh', '${_scores['Fiqh']}', '${(_weights!.fiqh * 100).toStringAsFixed(0)}%'],

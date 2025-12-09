@@ -44,7 +44,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Use theme background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -54,13 +54,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               // Header
               Column(
                 children: [
-                  Icon(Icons.mosque, size: 80, color: Theme.of(context).colorScheme.primary), // Use primary color
+                  Icon(Icons.mosque, size: 80, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 20),
                   Text(
                     'e-Penilaian Santri',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface, // Fixed
                         ),
                   ),
                   const SizedBox(height: 8),
@@ -79,12 +79,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(15), // Softer corners
+                  borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha: 0.1), // Fixed
                       blurRadius: 10,
-                      offset: const Offset(0, 3), // Softer shadow
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -127,7 +127,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: loading ? null : () async { // Disable button when loading
+                          onPressed: loading ? null : () async {
                             if (_formKey.currentState!.validate()) {
                               setState(() {
                                 loading = true;
@@ -136,23 +136,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               final user = await db.login(_emailController.text, _passwordController.text);
 
                               if (user != null) {
-                                // Save session
                                 await db.saveUserSession(
                                   user['id'],
                                   user['role'] ?? 'Ustadz',
                                   user['name'] ?? 'User'
                                 );
 
-                                // Update the userProvider state after successful login
                                 if (mounted) {
                                   ref.read(userProvider.notifier).login(
                                     user['id'],
                                     user['role'] ?? 'Ustadz',
                                     user['name'] ?? 'User',
                                   );
-                                }
 
-                                if (mounted) {
                                   setState(() {
                                     loading = false;
                                   });
@@ -169,17 +165,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     loading = false;
                                   });
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Login gagal. Periksa email dan kata sandi.')), // Translated
+                                    const SnackBar(content: Text('Login gagal. Periksa email dan kata sandi.')),
                                   );
                                 }
                               }
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary, // Use primary color
-                            foregroundColor: Colors.white, // Text color
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10), // Consistent with admin buttons
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             textStyle: const TextStyle(
                               fontSize: 18,
@@ -191,15 +187,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ? const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child: CircularProgressIndicator(color: Colors.white), // White loading indicator
+                                  child: CircularProgressIndicator(color: Colors.white),
                                 )
-                              : const Text('Masuk'), // Translated
+                              : const Text('Masuk'),
                         ),
                       ),
-                      const SizedBox(height: 20), // Spacing
+                      const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
-                        child: TextButton( // Changed to TextButton for a flatter look
+                        child: TextButton(
                           onPressed: () {
                             Navigator.pushReplacement(
                               context,
@@ -209,13 +205,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             );
                           },
                           style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.primary, // Primary color for link
+                            foregroundColor: Theme.of(context).colorScheme.primary,
                             textStyle: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: const Text('Belum punya akun? Daftar disini.'), // Translated
+                          child: const Text('Belum punya akun? Daftar disini.'),
                         ),
                       ),
                     ],
@@ -230,7 +226,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 }
 
-// Helper widget for consistent input field styling
 class _LoginInputCard extends StatelessWidget {
   final TextEditingController controller;
   final String labelText;
@@ -258,7 +253,7 @@ class _LoginInputCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1), // Fixed
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -271,9 +266,9 @@ class _LoginInputCard extends StatelessWidget {
         keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: labelText,
-          border: InputBorder.none, // Remove border from TextFormField itself
-          contentPadding: EdgeInsets.zero, // Remove default padding
-          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)), // Fixed
           prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
         ),
         validator: validator,

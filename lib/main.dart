@@ -9,7 +9,6 @@ import 'package:sipesantren/core/providers/weight_config_provider.dart'; // New 
 
 import 'features/auth/presentation/login_page.dart';
 import 'package:sipesantren/features/dashboard/presentation/dashboard_page.dart'; // New import
-import 'package:sipesantren/features/santri/presentation/santri_list_page.dart'; // Keep SantriListPage import for now
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,32 +1,182 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // New import
-import 'package:sipesantren/firebase_services.dart'; // New import for firestoreProvider
-import '../models/santri_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sipesantren/core/db_helper.dart';
+import 'package:sipesantren/core/models/santri_model.dart';
+import 'package:sipesantren/firebase_services.dart';
+import 'package:sqflite/sqflite.dart'; // Added import
+import 'package:uuid/uuid.dart';
 
 class SantriRepository {
-  final FirebaseFirestore _db;
+  final DatabaseHelper _dbHelper;
+  final FirebaseFirestore _firestore;
   final String _collection = 'santri';
+  final Uuid _uuid = const Uuid();
 
-  // Modified constructor to allow injecting FirebaseFirestore for testing
-  SantriRepository({FirebaseFirestore? firestore}) : _db = firestore ?? FirebaseFirestore.instance;
+  SantriRepository(this._dbHelper, this._firestore);
 
-  Stream<List<SantriModel>> getSantriList() {
-    return _db.collection(_collection).orderBy('nama').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => SantriModel.fromFirestore(doc)).toList();
-    });
+  // 1. Get List from SQLite
+  Future<List<SantriModel>> getSantriList() async {
+    final db = await _dbHelper.database;
+    // Get all except those marked for deletion (status 2) if we hide them locally immediately
+    // Or we show them but maybe grayed out? Usually we hide them.
+    final List<Map<String, dynamic>> maps = await db.query(
+      'santri',
+      where: 'syncStatus != ?',
+      whereArgs: [2], // 2 = deleted
+      orderBy: 'nama ASC',
+    );
+    return List.generate(maps.length, (i) => SantriModel.fromMap(maps[i]));
   }
 
+  // 2. Add Santri (Offline First)
   Future<void> addSantri(SantriModel santri) async {
-    await _db.collection(_collection).add(santri.toFirestore());
+    final db = await _dbHelper.database;
+    final newSantri = santri.copyWith(
+      id: santri.id.isEmpty ? _uuid.v4() : santri.id,
+      syncStatus: 1, // 1 = created/updated
+    );
+    
+    await db.insert(
+      'santri',
+      newSantri.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    
+    // Attempt sync
+    syncPendingChanges();
   }
 
+  // 3. Update Santri (Offline First)
   Future<void> updateSantri(SantriModel santri) async {
-    await _db.collection(_collection).doc(santri.id).update(santri.toFirestore());
+    final db = await _dbHelper.database;
+    final updatedSantri = santri.copyWith(
+      syncStatus: 1, // 1 = updated
+    );
+
+    await db.update(
+      'santri',
+      updatedSantri.toMap(),
+      where: 'id = ?',
+      whereArgs: [santri.id],
+    );
+
+    // Attempt sync
+    syncPendingChanges();
   }
 
+  // 4. Delete Santri (Offline First)
   Future<void> deleteSantri(String id) async {
-    await _db.collection(_collection).doc(id).delete();
+    final db = await _dbHelper.database;
+    // Mark as deleted (status 2)
+    await db.update(
+      'santri',
+      {'syncStatus': 2},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    
+    // Attempt sync
+    syncPendingChanges();
+  }
+
+  // 5. Sync Pending Changes
+  Future<void> syncPendingChanges() async {
+    final db = await _dbHelper.database;
+    
+    // Find dirty records
+    final List<Map<String, dynamic>> dirtyRecords = await db.query(
+      'santri',
+      where: 'syncStatus != ?',
+      whereArgs: [0],
+    );
+
+    if (dirtyRecords.isEmpty) return;
+
+    final batch = _firestore.batch();
+    List<String> idsToUpdate = [];
+    List<String> idsToDelete = [];
+
+    for (var record in dirtyRecords) {
+      final santri = SantriModel.fromMap(record);
+      final docRef = _firestore.collection(_collection).doc(santri.id);
+      
+      if (santri.syncStatus == 2) {
+        // Delete
+        batch.delete(docRef);
+        idsToDelete.add(santri.id);
+      } else {
+        // Create or Update
+        // Remove syncStatus before sending to Firestore
+        final data = santri.toFirestore();
+        batch.set(docRef, data, SetOptions(merge: true));
+        idsToUpdate.add(santri.id);
+      }
+    }
+
+    try {
+      await batch.commit();
+
+      // Update local status to 0 (synced) or delete physically if it was a delete
+      final batchUpdate = await _dbHelper.database; // Re-get db just in case
+      final batchSql = batchUpdate.batch();
+
+      for (var id in idsToUpdate) {
+        batchSql.update('santri', {'syncStatus': 0}, where: 'id = ?', whereArgs: [id]);
+      }
+
+      for (var id in idsToDelete) {
+        batchSql.delete('santri', where: 'id = ?', whereArgs: [id]);
+      }
+
+      await batchSql.commit(noResult: true);
+    } catch (e) {
+      // Keep status as dirty, will retry next time
+    }
+  }
+
+  // 6. Pull from Firestore (Initial Sync / Pull to Refresh)
+  Future<void> fetchFromFirestore() async {
+    try {
+      final snapshot = await _firestore.collection(_collection).get();
+      final db = await _dbHelper.database;
+      final batch = db.batch();
+
+      // We might want to clear local DB or merge. 
+      // Strategy: Overwrite local with server data if server has it.
+      // But we shouldn't overwrite unsynced local changes (status != 0).
+      // For simplicity, let's assume server is truth for existing IDs.
+      
+      for (var doc in snapshot.docs) {
+        final santri = SantriModel.fromFirestore(doc);
+        // Check if we have a local dirty copy
+        final localCopy = await db.query('santri', where: 'id = ?', whereArgs: [santri.id]);
+        if (localCopy.isNotEmpty) {
+           final localSantri = SantriModel.fromMap(localCopy.first);
+           if (localSantri.syncStatus != 0) {
+             // Conflict! Local has changes. Keep local changes? 
+             // Or User Last Write Wins? 
+             // Requirement says "antrian perubahan" (queue changes).
+             // We'll skip overwriting if local is dirty.
+             continue;
+           }
+        }
+        
+        batch.insert(
+          'santri', 
+          santri.copyWith(syncStatus: 0).toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace
+        );
+      }
+      await batch.commit(noResult: true);
+    } catch (e) {
+      // Fetch failed
+    }
   }
 }
 
-final santriRepositoryProvider = Provider((ref) => SantriRepository(firestore: ref.watch(firestoreProvider)));
+final santriRepositoryProvider = Provider((ref) {
+  return SantriRepository(
+    DatabaseHelper(),
+    ref.watch(firestoreProvider),
+  );
+});

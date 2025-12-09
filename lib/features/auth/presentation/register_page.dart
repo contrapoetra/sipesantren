@@ -9,10 +9,10 @@ class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  ConsumerState<RegisterPage> createState() => _RegisterPageState(); // Corrected class name
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected class name
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -32,7 +32,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Use theme background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -42,18 +42,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
               // Header
               Column(
                 children: [
-                  Icon(Icons.mosque, size: 80, color: Theme.of(context).colorScheme.primary), // Use primary color
+                  Icon(Icons.mosque, size: 80, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 20),
                   Text(
-                    'Daftar Akun Baru', // Title for Register Page
+                    'Daftar Akun Baru',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface, // Updated
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Silakan lengkapi data Anda', // Subtitle for Register Page
+                    'Silakan lengkapi data Anda',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -67,12 +67,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(15), // Softer corners
+                  borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withOpacity(0.1), // Keep for now or use withValues(alpha: 0.1)
                       blurRadius: 10,
-                      offset: const Offset(0, 3), // Softer shadow
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -85,10 +85,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
                         labelText: 'Peran',
                         icon: Icons.category,
                         child: DropdownButtonFormField<String>(
-                          value: _selectedRole, // Ensure initial value is handled
+                          value: _selectedRole,
                           decoration: InputDecoration(
-                            border: InputBorder.none, // Remove border, handled by parent Container
-                            contentPadding: EdgeInsets.zero, // Remove default padding
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
                             labelText: 'Peran',
                             prefixIcon: Icon(Icons.category, color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
                             prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
@@ -165,7 +165,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: loading ? null : () async { // Disable button when loading
+                          onPressed: loading ? null : () async {
                             if (_formKey.currentState!.validate()) {
                               setState(() {
                                 loading = true;
@@ -183,7 +183,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
                                 });
                                 if (userCreated) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Registrasi berhasil!')), // Translated
+                                    const SnackBar(content: Text('Registrasi berhasil!')),
                                   );
                                   Navigator.pushReplacement(
                                     context,
@@ -193,17 +193,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
                                   );
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Registrasi gagal. Email mungkin sudah terdaftar.')), // Translated
+                                    const SnackBar(content: Text('Registrasi gagal. Email mungkin sudah terdaftar.')),
                                   );
                                 }
                               }
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary, // Use primary color
-                            foregroundColor: Colors.white, // Text color
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10), // Consistent with admin buttons
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             textStyle: const TextStyle(
                               fontSize: 18,
@@ -215,15 +215,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
                               ? const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child: CircularProgressIndicator(color: Colors.white), // White loading indicator
+                                  child: CircularProgressIndicator(color: Colors.white),
                                 )
-                              : const Text('Daftar'), // Translated
+                              : const Text('Daftar'),
                         ),
                       ),
-                      const SizedBox(height: 20), // Spacing
+                      const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
-                        child: TextButton( // Changed to TextButton for a flatter look
+                        child: TextButton(
                           onPressed: () {
                             Navigator.pushReplacement(
                               context,
@@ -233,13 +233,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
                             );
                           },
                           style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.primary, // Primary color for link
+                            foregroundColor: Theme.of(context).colorScheme.primary,
                             textStyle: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: const Text('Sudah punya akun? Masuk disini.'), // Translated
+                          child: const Text('Sudah punya akun? Masuk disini.'),
                         ),
                       ),
                     ],
@@ -254,15 +254,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> { // Corrected clas
   }
 }
 
-// Helper widget for consistent input field styling
 class _RegisterInputCard extends StatelessWidget {
-  final TextEditingController? controller; // Made nullable for dropdown case
+  final TextEditingController? controller;
   final String labelText;
   final IconData icon;
   final String? Function(String?)? validator;
   final bool obscureText;
   final TextInputType keyboardType;
-  final Widget? child; // For dropdown
+  final Widget? child;
 
   const _RegisterInputCard({
     this.controller,
@@ -271,7 +270,7 @@ class _RegisterInputCard extends StatelessWidget {
     this.validator,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
-    this.child, // For dropdown
+    this.child,
   });
 
   @override
@@ -297,8 +296,8 @@ class _RegisterInputCard extends StatelessWidget {
         keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: labelText,
-          border: InputBorder.none, // Remove border from TextFormField itself
-          contentPadding: EdgeInsets.zero, // Remove default padding
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
           prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
           prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
         ),

@@ -18,7 +18,7 @@ class UserManagementPage extends ConsumerWidget {
         title: const Text('Kelola Pengguna'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-        elevation: 0, // Remove shadow
+        elevation: 0,
       ),
       body: usersAsyncValue.when(
         data: (users) {
@@ -41,7 +41,7 @@ class UserManagementPage extends ConsumerWidget {
         onPressed: () => _showAddEditUserDialog(context, ref),
         backgroundColor: Theme.of(context).colorScheme.secondary,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), // Custom shape
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         elevation: 4,
         child: const Icon(Icons.add),
       ),
@@ -67,7 +67,7 @@ class UserManagementPage extends ConsumerWidget {
     final nameController = TextEditingController(text: user?.name);
     final emailController = TextEditingController(text: user?.email);
     final passwordController = TextEditingController();
-    String? selectedRole = user?.role ?? 'Ustadz'; // Default role
+    String? selectedRole = user?.role ?? 'Ustadz';
 
     await showDialog(
       context: context,
@@ -167,7 +167,7 @@ class UserManagementPage extends ConsumerWidget {
                     );
                     Fluttertoast.showToast(msg: 'Pengguna berhasil ditambahkan!');
                   }
-                  Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 } catch (e) {
                   Fluttertoast.showToast(msg: 'Gagal: $e');
                 }
@@ -228,7 +228,7 @@ class UserManagementPage extends ConsumerWidget {
                     newPasswordController.text,
                   );
                   Fluttertoast.showToast(msg: 'Kata sandi berhasil diperbarui!');
-                  Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 } catch (e) {
                   Fluttertoast.showToast(msg: 'Gagal memperbarui kata sandi: $e');
                 }
@@ -272,7 +272,7 @@ class UserManagementPage extends ConsumerWidget {
                 try {
                   await firebaseServices.deleteUser(user.id);
                   Fluttertoast.showToast(msg: 'Pengguna berhasil dihapus!');
-                  Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 } catch (e) {
                   Fluttertoast.showToast(msg: 'Gagal menghapus pengguna: $e');
                 }
@@ -292,7 +292,6 @@ class UserManagementPage extends ConsumerWidget {
   }
 }
 
-// Custom Widget for User List Item
 class _UserListItem extends StatelessWidget {
   final UserModel user;
   final WidgetRef ref;
@@ -314,7 +313,7 @@ class _UserListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1), // Fixed withValues
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -340,7 +339,7 @@ class _UserListItem extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1), // Fixed withValues
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

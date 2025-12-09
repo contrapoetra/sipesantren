@@ -6,8 +6,9 @@ class PenilaianTahfidz {
   final DateTime minggu;
   final String surah;
   final int ayatSetor;
-  final int targetAyat; // Added based on formula requirement: (setor/target)*100
-  final int tajwid; // 0-100
+  final int targetAyat;
+  final int tajwid;
+  final int? syncStatus;
 
   PenilaianTahfidz({
     required this.id,
@@ -17,7 +18,35 @@ class PenilaianTahfidz {
     required this.ayatSetor,
     required this.targetAyat,
     required this.tajwid,
+    this.syncStatus,
   });
+
+  // SQLite
+  factory PenilaianTahfidz.fromMap(Map<String, dynamic> map) {
+    return PenilaianTahfidz(
+      id: map['id'],
+      santriId: map['santriId'],
+      minggu: DateTime.fromMillisecondsSinceEpoch(map['minggu']),
+      surah: map['surah'],
+      ayatSetor: map['ayat_setor'],
+      targetAyat: map['target_ayat'],
+      tajwid: map['tajwid'],
+      syncStatus: map['syncStatus'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'santriId': santriId,
+      'minggu': minggu.millisecondsSinceEpoch,
+      'surah': surah,
+      'ayat_setor': ayatSetor,
+      'target_ayat': targetAyat,
+      'tajwid': tajwid,
+      if (syncStatus != null) 'syncStatus': syncStatus,
+    };
+  }
 
   factory PenilaianTahfidz.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -27,7 +56,7 @@ class PenilaianTahfidz {
       minggu: (data['minggu'] as Timestamp).toDate(),
       surah: data['surah'] ?? '',
       ayatSetor: data['ayat_setor'] ?? 0,
-      targetAyat: data['target_ayat'] ?? 50, // Default target
+      targetAyat: data['target_ayat'] ?? 50,
       tajwid: data['tajwid'] ?? 0,
     );
   }
@@ -53,9 +82,10 @@ class PenilaianTahfidz {
 class PenilaianMapel {
   final String id;
   final String santriId;
-  final String mapel; // "Fiqh" | "Bahasa Arab"
-  final int formatif; // 0-100
-  final int sumatif; // 0-100
+  final String mapel;
+  final int formatif;
+  final int sumatif;
+  final int? syncStatus;
 
   PenilaianMapel({
     required this.id,
@@ -63,7 +93,31 @@ class PenilaianMapel {
     required this.mapel,
     required this.formatif,
     required this.sumatif,
+    this.syncStatus,
   });
+
+  // SQLite
+  factory PenilaianMapel.fromMap(Map<String, dynamic> map) {
+    return PenilaianMapel(
+      id: map['id'],
+      santriId: map['santriId'],
+      mapel: map['mapel'],
+      formatif: map['formatif'],
+      sumatif: map['sumatif'],
+      syncStatus: map['syncStatus'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'santriId': santriId,
+      'mapel': mapel,
+      'formatif': formatif,
+      'sumatif': sumatif,
+      if (syncStatus != null) 'syncStatus': syncStatus,
+    };
+  }
 
   factory PenilaianMapel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -93,11 +147,12 @@ class PenilaianMapel {
 class PenilaianAkhlak {
   final String id;
   final String santriId;
-  final int disiplin; // 1-4
-  final int adab; // 1-4
-  final int kebersihan; // 1-4
-  final int kerjasama; // 1-4
+  final int disiplin;
+  final int adab;
+  final int kebersihan;
+  final int kerjasama;
   final String catatan;
+  final int? syncStatus;
 
   PenilaianAkhlak({
     required this.id,
@@ -107,7 +162,35 @@ class PenilaianAkhlak {
     required this.kebersihan,
     required this.kerjasama,
     required this.catatan,
+    this.syncStatus,
   });
+
+  // SQLite
+  factory PenilaianAkhlak.fromMap(Map<String, dynamic> map) {
+    return PenilaianAkhlak(
+      id: map['id'],
+      santriId: map['santriId'],
+      disiplin: map['disiplin'],
+      adab: map['adab'],
+      kebersihan: map['kebersihan'],
+      kerjasama: map['kerjasama'],
+      catatan: map['catatan'],
+      syncStatus: map['syncStatus'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'santriId': santriId,
+      'disiplin': disiplin,
+      'adab': adab,
+      'kebersihan': kebersihan,
+      'kerjasama': kerjasama,
+      'catatan': catatan,
+      if (syncStatus != null) 'syncStatus': syncStatus,
+    };
+  }
 
   factory PenilaianAkhlak.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -143,14 +226,37 @@ class Kehadiran {
   final String id;
   final String santriId;
   final DateTime tanggal;
-  final String status; // "H","S","I","A"
+  final String status;
+  final int? syncStatus;
 
   Kehadiran({
     required this.id,
     required this.santriId,
     required this.tanggal,
     required this.status,
+    this.syncStatus,
   });
+
+  // SQLite
+  factory Kehadiran.fromMap(Map<String, dynamic> map) {
+    return Kehadiran(
+      id: map['id'],
+      santriId: map['santriId'],
+      tanggal: DateTime.fromMillisecondsSinceEpoch(map['tanggal']),
+      status: map['status'],
+      syncStatus: map['syncStatus'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'santriId': santriId,
+      'tanggal': tanggal.millisecondsSinceEpoch,
+      'status': status,
+      if (syncStatus != null) 'syncStatus': syncStatus,
+    };
+  }
 
   factory Kehadiran.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;

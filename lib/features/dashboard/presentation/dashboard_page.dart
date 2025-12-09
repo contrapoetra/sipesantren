@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sipesantren/core/providers/user_provider.dart';
 import 'package:sipesantren/features/admin/presentation/weight_config_page.dart';
-import 'package:sipesantren/features/admin/presentation/user_management_page.dart'; // New import // Import userProvider
+import 'package:sipesantren/features/admin/presentation/user_management_page.dart';
 import 'package:sipesantren/features/auth/presentation/login_page.dart';
 import 'package:sipesantren/features/santri/presentation/santri_list_page.dart';
+import 'package:sipesantren/firebase_services.dart'; // Added import
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -28,6 +29,16 @@ class DashboardPage extends ConsumerWidget {
               Text('Selamat Datang Admin! $roleMessage',
                   style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 20),
+              DashboardActionCard(
+                icon: Icons.people_outline,
+                title: 'Kelola Santri',
+                subtitle: 'Tambah, edit, hapus data santri.',
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const SantriListPage()));
+                },
+              ),
+              const SizedBox(height: 10),
               DashboardActionCard(
                 icon: Icons.edit_note,
                 title: 'Konfigurasi Bobot Penilaian',
@@ -74,14 +85,15 @@ class DashboardPage extends ConsumerWidget {
                 title: 'Input Nilai',
                 subtitle: 'Masukkan dan perbarui nilai santri.',
                 onTap: () {
-                  // TODO: Implement navigation to Input Grades page
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const SantriListPage()));
                 },
               ),
             ],
           ),
         );
         break;
-      case 'Wali':
+      case 'Wali Santri': // Fixed role string matching 'Wali Santri' from UserProvider/Login
         bodyContent = SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -92,19 +104,11 @@ class DashboardPage extends ConsumerWidget {
               const SizedBox(height: 20),
               DashboardActionCard(
                 icon: Icons.assignment,
-                title: 'Lihat Rapor',
-                subtitle: 'Akses rapor santri Anda.',
+                title: 'Lihat Rapor & Detail',
+                subtitle: 'Akses rapor dan informasi santri.',
                 onTap: () {
-                  // TODO: Implement navigation to RaporPage
-                },
-              ),
-              const SizedBox(height: 10),
-              DashboardActionCard(
-                icon: Icons.person,
-                title: 'Lihat Detail Santri',
-                subtitle: 'Lihat informasi rinci tentang santri Anda.',
-                onTap: () {
-                  // TODO: Implement navigation to Santri Details page
+                   Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const SantriListPage()));
                 },
               ),
             ],
@@ -112,7 +116,25 @@ class DashboardPage extends ConsumerWidget {
         );
         break;
       default:
-        bodyContent = Center(child: Text('Peran tidak dikenali. $roleMessage'));
+        // Fallback for any other role
+        bodyContent = SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+               Text('Peran: ${userState.userRole}.'),
+               const SizedBox(height: 20),
+               DashboardActionCard(
+                icon: Icons.list,
+                title: 'Daftar Santri',
+                subtitle: 'Lihat daftar santri.',
+                onTap: () {
+                   Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const SantriListPage()));
+                },
+              ),
+            ],
+          )
+        );
     }
 
     return Scaffold(
@@ -122,7 +144,10 @@ class DashboardPage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              ref.read(userProvider.notifier).logout();
+              // Proper logout via provider
+              final firebaseServices = ref.read(firebaseServicesProvider); // Obtain service via provider
+              firebaseServices.logout(); // Call logout on service
+              ref.read(userProvider.notifier).logout(); // Update state
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => const LoginPage()),
               );
