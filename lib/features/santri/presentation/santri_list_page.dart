@@ -38,8 +38,9 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daftar Santri'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           StreamBuilder<QuerySnapshot>(
             stream: _firestore.collection('santri').snapshots(),
@@ -114,8 +115,20 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
         children: [
           // Search and Filter Section
           Container(
+            margin: const EdgeInsets.all(16), // Added margin
             padding: const EdgeInsets.all(16),
-            color: Colors.grey[50],
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor, // Use card color
+              borderRadius: BorderRadius.circular(15), // Rounded corners
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
             child: Column(
               children: [
                 // Search Bar
@@ -123,10 +136,13 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Cari santri...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10), // Rounded corners for input
+                      borderSide: BorderSide.none, // Remove border
                     ),
+                    filled: true,
+                    fillColor: Colors.grey[100], // Light background for the text field
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -143,9 +159,9 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
+                          color: Colors.grey[100], // Light background for dropdown
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.transparent), // Remove border
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
@@ -171,9 +187,9 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
+                          color: Colors.grey[100], // Light background for dropdown
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.transparent), // Remove border
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
@@ -233,16 +249,20 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
                     final bool hasPendingWrites = doc.metadata.hasPendingWrites;
 
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      elevation: 2, // Add a subtle shadow
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15), // Consistent rounded corners
+                      ),
                       child: ListTile(
                         leading: Container(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(20),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1), // Theme-based background
+                            borderRadius: BorderRadius.circular(10), // Slightly less rounded than outer card
                           ),
-                          child: const Icon(Icons.person, color: Colors.blue),
+                          child: Icon(Icons.person, color: Theme.of(context).colorScheme.primary), // Theme-based icon color
                         ),
                         title: Text(santri.nama),
                         subtitle: Column(
