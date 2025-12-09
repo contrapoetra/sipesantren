@@ -93,7 +93,7 @@ class DashboardPage extends ConsumerWidget {
           ),
         );
         break;
-      case 'Wali Santri': // Fixed role string matching 'Wali Santri' from UserProvider/Login
+      case 'Wali': // Updated from 'Wali Santri' to match registration
         bodyContent = SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -104,8 +104,18 @@ class DashboardPage extends ConsumerWidget {
               const SizedBox(height: 20),
               DashboardActionCard(
                 icon: Icons.assignment,
-                title: 'Lihat Rapor & Detail',
-                subtitle: 'Akses rapor dan informasi santri.',
+                title: 'Lihat Rapor',
+                subtitle: 'Akses rapor santri Anda.',
+                onTap: () {
+                   Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const SantriListPage()));
+                },
+              ),
+              const SizedBox(height: 10),
+              DashboardActionCard(
+                icon: Icons.person,
+                title: 'Lihat Detail Santri',
+                subtitle: 'Lihat informasi rinci tentang santri Anda.',
                 onTap: () {
                    Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const SantriListPage()));

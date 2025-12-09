@@ -272,7 +272,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
                                       ),
                                   ],
                                 ),
-                                trailing: (ref.watch(userProvider).userRole != 'Wali Santri')
+                                trailing: (ref.watch(userProvider).userRole != 'Wali' && ref.watch(userProvider).userRole != 'Wali Santri')
                                     ? PopupMenuButton<String>(
                                         onSelected: (value) async {
                                           if (value == 'edit') {
@@ -353,7 +353,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> {
           ),
         ],
       ),
-      floatingActionButton: (ref.watch(userProvider).userRole != 'Wali Santri')
+      floatingActionButton: (ref.watch(userProvider).userRole != 'Wali' && ref.watch(userProvider).userRole != 'Wali Santri')
           ? FloatingActionButton(
               onPressed: () async {
                 await Navigator.push(
@@ -468,7 +468,7 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
                   _buildNilaiCard('Akhlak', '94', Colors.purple, Icons.emoji_people),
                   _buildNilaiCard('Kehadiran', '90', Colors.red, Icons.calendar_today),
                   const SizedBox(height: 16),
-                  if (ref.watch(userProvider).userRole != 'Wali Santri')
+                  if (ref.watch(userProvider).userRole != 'Wali' && ref.watch(userProvider).userRole != 'Wali Santri')
                     ElevatedButton.icon(
                       onPressed: () async {
                         await Navigator.push(
