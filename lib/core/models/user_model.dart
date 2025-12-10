@@ -5,6 +5,7 @@ class UserModel {
   final String name;
   final String email;
   final String role;
+  final String? requestedRole;
   final String hashedPassword; // This will store salt:::hash
   final DateTime createdAt;
 
@@ -13,6 +14,7 @@ class UserModel {
     required this.name,
     required this.email,
     required this.role,
+    this.requestedRole,
     required this.hashedPassword,
     required this.createdAt,
   });
@@ -24,6 +26,7 @@ class UserModel {
       name: data['name'] ?? '',
       email: data['email'] ?? '',
       role: data['role'] ?? 'Ustadz', // Default role if not specified
+      requestedRole: data['requested_role'],
       hashedPassword: data['hashed_password'] ?? '',
       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -34,6 +37,7 @@ class UserModel {
       'name': name,
       'email': email,
       'role': role,
+      'requested_role': requestedRole,
       'hashed_password': hashedPassword,
       'created_at': Timestamp.fromDate(createdAt),
     };
@@ -44,6 +48,7 @@ class UserModel {
     String? name,
     String? email,
     String? role,
+    String? requestedRole,
     String? hashedPassword,
     DateTime? createdAt,
   }) {
@@ -52,6 +57,7 @@ class UserModel {
       name: name ?? this.name,
       email: email ?? this.email,
       role: role ?? this.role,
+      requestedRole: requestedRole ?? this.requestedRole,
       hashedPassword: hashedPassword ?? this.hashedPassword,
       createdAt: createdAt ?? this.createdAt,
     );

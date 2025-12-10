@@ -15,12 +15,14 @@ class FirebaseServices {
   FirebaseServices({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
 
   Future<bool> createUser(
-      String name, String email, String hashedPassword, String role) async {
+      String name, String email, String hashedPassword, String role,
+      {String? requestedRole}) async {
     final user = <String, dynamic>{
       "name": name,
       "email": email,
       "hashed_password": hashedPassword,
       "role": role,
+      "requested_role": requestedRole,
       "created_at": FieldValue.serverTimestamp(),
     };
 
@@ -147,6 +149,31 @@ class FirebaseServices {
       return true;
     } catch (e) {
       debugPrint("Error updating user: $e");
+      return false;
+    }
+  }
+
+  Future<bool> approveUserRoleRequest(String userId, String newRole) async {
+    try {
+      await db.collection('users').doc(userId).update({
+        'role': newRole,
+        'requested_role': null,
+      });
+      return true;
+    } catch (e) {
+      debugPrint("Error approving user role request: $e");
+      return false;
+    }
+  }
+
+  Future<bool> rejectUserRoleRequest(String userId) async {
+    try {
+      await db.collection('users').doc(userId).update({
+        'requested_role': null,
+      });
+      return true;
+    } catch (e) {
+      debugPrint("Error rejecting user role request: $e");
       return false;
     }
   }

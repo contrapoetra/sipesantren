@@ -17,7 +17,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _selectedRole = 'Ustadz';
+  String _selectedRole = 'Wali';
   final FirebaseServices db = FirebaseServices();
   bool loading = false;
 
@@ -70,7 +70,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1), // Keep for now or use withValues(alpha: 0.1)
+                      color: Colors.grey.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -90,7 +90,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
                             labelText: 'Peran',
-                            prefixIcon: Icon(Icons.category, color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
+                            prefixIcon: Icon(Icons.category, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
                             prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
                           ),
                           items: const [
@@ -170,11 +170,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               setState(() {
                                 loading = true;
                               });
+
+                              String roleToSave = 'Wali';
+                              String? requestedRoleToSave;
+
+                              if (_selectedRole == 'Wali') {
+                                roleToSave = 'Wali';
+                                requestedRoleToSave = null;
+                              } else {
+                                roleToSave = 'Wali';
+                                requestedRoleToSave = _selectedRole;
+                              }
+
                               bool userCreated = await db.createUser(
                                 _nameController.text,
                                 _emailController.text,
                                 PasswordHandler.hashPassword(_passwordController.text, PasswordHandler.generateSalt()),
-                                _selectedRole
+                                roleToSave,
+                                requestedRole: requestedRoleToSave,
                               );
 
                               if (mounted) {

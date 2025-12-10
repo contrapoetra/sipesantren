@@ -48,7 +48,8 @@ class UserManagementPage extends ConsumerWidget {
     );
   }
 
-  void _handleUserAction(BuildContext context, WidgetRef ref, String action, UserModel user) {
+  void _handleUserAction(BuildContext context, WidgetRef ref, String action, UserModel user) async {
+    final firebaseServices = ref.read(firebaseServicesProvider);
     switch (action) {
       case 'edit':
         _showAddEditUserDialog(context, ref, user: user);
@@ -58,6 +59,22 @@ class UserManagementPage extends ConsumerWidget {
         break;
       case 'delete':
         _showDeleteUserDialog(context, ref, user);
+        break;
+      case 'approve_request':
+        try {
+          await firebaseServices.approveUserRoleRequest(user.id, user.requestedRole!);
+          Fluttertoast.showToast(msg: 'Permintaan peran disetujui!');
+        } catch (e) {
+          Fluttertoast.showToast(msg: 'Gagal menyetujui: $e');
+        }
+        break;
+      case 'reject_request':
+        try {
+          await firebaseServices.rejectUserRoleRequest(user.id);
+          Fluttertoast.showToast(msg: 'Permintaan peran ditolak.');
+        } catch (e) {
+          Fluttertoast.showToast(msg: 'Gagal menolak: $e');
+        }
         break;
     }
   }
@@ -320,7 +337,7 @@ class _UserListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1), // Fixed withValues
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -343,23 +360,57 @@ class _UserListItem extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1), // Fixed withValues
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    user.role,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.secondary,
-                          fontWeight: FontWeight.bold,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        user.role,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                    if (user.requestedRole != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber),
                         ),
-                  ),
+                        child: Text(
+                          'Request: ${user.requestedRole}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.amber[900],
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
+          if (user.requestedRole != null) ...[
+            IconButton(
+              icon: const Icon(Icons.check_circle, color: Colors.green),
+              tooltip: 'Setujui',
+              onPressed: () => onAction(context, ref, 'approve_request', user),
+            ),
+            IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              tooltip: 'Tolak',
+              onPressed: () => onAction(context, ref, 'reject_request', user),
+            ),
+          ],
           PopupMenuButton<String>(
             onSelected: (value) => onAction(context, ref, value, user),
             itemBuilder: (context) => [
