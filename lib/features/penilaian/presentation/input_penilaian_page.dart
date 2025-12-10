@@ -7,26 +7,31 @@ import 'package:sipesantren/core/repositories/penilaian_repository.dart';
 import 'package:sipesantren/core/models/mapel_model.dart'; // New import
 import 'package:sipesantren/core/repositories/mapel_repository.dart'; // New import
 
-class InputPenilaianPage extends ConsumerStatefulWidget { // Changed to ConsumerStatefulWidget
-  final SantriModel? santri; // Optional for standalone, but usually required
-  const InputPenilaianPage({super.key, this.santri});
+class InputPenilaianPage extends ConsumerStatefulWidget {
+  final SantriModel? santri;
+  final String initialType; // Added parameter
+
+  const InputPenilaianPage({
+    super.key, 
+    this.santri,
+    this.initialType = 'Tahfidz',
+  });
 
   @override
-  ConsumerState<InputPenilaianPage> createState() => _InputPenilaianPageState(); // Changed to ConsumerState
+  ConsumerState<InputPenilaianPage> createState() => _InputPenilaianPageState();
 }
 
-class _InputPenilaianPageState extends ConsumerState<InputPenilaianPage> { // Changed to ConsumerState
+class _InputPenilaianPageState extends ConsumerState<InputPenilaianPage> {
+  // Removed SingleTickerProviderStateMixin since no animation needed here anymore
   int _selectedIndex = 0;
-  // Removed direct instantiation, now obtained from provider
-  // Removed direct instantiation, now obtained from provider
-  List<MapelModel> _mapelList = []; // New
-  List<String> _jenisPenilaian = ['Tahfidz', 'Akhlak', 'Kehadiran']; // Modified
-  int _mapelStartIndex = 0; // New: index where mapel items start in _jenisPenilaian
+  List<MapelModel> _mapelList = [];
+  List<String> _jenisPenilaian = ['Tahfidz', 'Akhlak', 'Kehadiran'];
+  int _mapelStartIndex = 0;
 
   // Controllers - Tahfidz
   final _tahfidzSurahController = TextEditingController();
   final _tahfidzAyatSetorController = TextEditingController();
-  final _tahfidzTargetAyatController = TextEditingController(text: "50"); // Default target
+  final _tahfidzTargetAyatController = TextEditingController(text: "50");
   final _tahfidzTajwidController = TextEditingController();
 
   // Controllers - Mapel
@@ -44,7 +49,6 @@ class _InputPenilaianPageState extends ConsumerState<InputPenilaianPage> { // Ch
   DateTime _kehadiranTanggal = DateTime.now();
   String _kehadiranStatus = 'H';
 
-
   @override
   void initState() {
     super.initState();
@@ -61,8 +65,14 @@ class _InputPenilaianPageState extends ConsumerState<InputPenilaianPage> { // Ch
         for (var m in _mapelList) {
           _jenisPenilaian.add(m.name);
         }
-        _mapelStartIndex = 1; // Tahfidz is 0, so mapel starts at 1
+        _mapelStartIndex = 1;
         _jenisPenilaian.addAll(['Akhlak', 'Kehadiran']);
+        
+        // Set initial selection
+        final index = _jenisPenilaian.indexOf(widget.initialType);
+        if (index != -1) {
+          _selectedIndex = index;
+        }
       });
     }
   }
@@ -79,10 +89,15 @@ class _InputPenilaianPageState extends ConsumerState<InputPenilaianPage> { // Ch
     super.dispose();
   }
 
+  IconData _getIconForType(String type) {
+    if (type == 'Tahfidz') return Icons.book;
+    if (type == 'Akhlak') return Icons.favorite;
+    if (type == 'Kehadiran') return Icons.calendar_today;
+    return Icons.class_; 
+  }
+
   @override
   Widget build(BuildContext context) {
-    final _repository = ref.read(penilaianRepositoryProvider); // Get from provider
-
     if (widget.santri == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Error')),
@@ -92,54 +107,20 @@ class _InputPenilaianPageState extends ConsumerState<InputPenilaianPage> { // Ch
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Input Penilaian: ${widget.santri!.nama}'),
+        title: Text('Input: ${widget.initialType}'), // Specific title
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-          // Jenis Penilaian Selection
-          SizedBox(
-            height: 60,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _jenisPenilaian.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedIndex = index;
-                      // Reset controllers/state if needed when switching tabs
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _selectedIndex == index ? Colors.blue : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _jenisPenilaian[index],
-                      style: TextStyle(
-                        color: _selectedIndex == index ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFormByType(),
+            ],
           ),
-
-          // Form Input berdasarkan jenis
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                child: _buildFormByType(),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

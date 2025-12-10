@@ -60,8 +60,7 @@ class GradingService {
         (weights.akhlak * akhlak) +
         (weights.kehadiran * kehadiran);
     
-    // finalScore = finalScore.roundToDouble(); // Original integer rounding
-    finalScore = double.parse(finalScore.toStringAsFixed(2)); // Round to 2 decimals
+    finalScore = finalScore.roundToDouble();
 
     String predikat = 'D';
     if (finalScore >= 85) {

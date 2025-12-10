@@ -18,7 +18,8 @@ import 'package:sipesantren/features/master_data/presentation/weight_config_page
 
 import 'package:sipesantren/core/services/grading_service.dart';
 import 'package:sipesantren/core/repositories/weight_config_repository.dart';
-import 'package:sipesantren/core/models/weight_config_model.dart'; // Added
+import 'package:sipesantren/core/repositories/mapel_repository.dart'; // Added
+import 'package:sipesantren/core/models/weight_config_model.dart'; 
 import 'package:intl/intl.dart';
 
 class SantriListPage extends ConsumerStatefulWidget {
@@ -472,7 +473,7 @@ class SantriDetailPage extends ConsumerStatefulWidget {
   ConsumerState<SantriDetailPage> createState() => _SantriDetailPageState();
 }
 
-class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
+class _SantriDetailPageState extends ConsumerState<SantriDetailPage> with SingleTickerProviderStateMixin {
   final GradingService _gradingService = GradingService();
   
   bool _isLoading = true;
@@ -502,29 +503,56 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
   // Calendar State
   DateTime _focusedMonth = DateTime.now();
 
+  // Speed Dial FAB State
+  late AnimationController _fabController;
+  late Animation<double> _fabAnimation;
+  bool _isFabOpen = false;
+  List<String> _inputOptions = ['Tahfidz', 'Akhlak', 'Kehadiran']; // Will be populated with Mapels
+
   @override
   void initState() {
     super.initState();
+    _fabController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _fabAnimation = CurvedAnimation(parent: _fabController, curve: Curves.easeOut);
+    
     _loadAllData();
+    _loadInputOptions();
+  }
+
+  @override
+  void dispose() {
+    _fabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInputOptions() async {
+    final mapelRepo = ref.read(mapelRepositoryProvider);
+    final mapels = await mapelRepo.getMapelList();
+    if (mounted) {
+      setState(() {
+        _inputOptions = ['Tahfidz', ...mapels.map((m) => m.name), 'Akhlak', 'Kehadiran'];
+      });
+    }
   }
 
   Future<void> _loadAllData() async {
+    // ... existing loadAllData logic ...
     final santriId = widget.santri.id;
     final penilaianRepo = ref.read(penilaianRepositoryProvider);
     final weightRepo = ref.read(weightConfigRepositoryProvider);
 
     try {
-      // 1. Ensure weights are ready
       await weightRepo.initializeWeightConfig();
       final weights = await weightRepo.getWeightConfig().first;
 
-      // 2. Fetch all raw data
       final tahfidz = await penilaianRepo.getTahfidzBySantri(santriId);
       final mapel = await penilaianRepo.getMapelBySantri(santriId);
       final akhlak = await penilaianRepo.getAkhlakBySantri(santriId);
       final kehadiran = await penilaianRepo.getKehadiranBySantri(santriId);
 
-      // 3. Calculate Scores
       final sTahfidz = _gradingService.calculateTahfidz(tahfidz);
       final sFiqh = _gradingService.calculateMapel(mapel, 'Fiqh');
       final sArab = _gradingService.calculateMapel(mapel, 'Bahasa Arab');
@@ -554,7 +582,7 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
           };
           
           _finalGrade = finalResult;
-          _weights = weights; // Save weights
+          _weights = weights; 
           _isLoading = false;
         });
       }
@@ -564,6 +592,35 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _toggleFab() {
+    setState(() {
+      _isFabOpen = !_isFabOpen;
+      if (_isFabOpen) {
+        _fabController.forward();
+      } else {
+        _fabController.reverse();
+      }
+    });
+  }
+
+  void _navigateToInput(String type) async {
+    _toggleFab(); // Close menu
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InputPenilaianPage(santri: widget.santri, initialType: type),
+      ),
+    );
+    _loadAllData(); // Refresh on return
+  }
+
+  IconData _getIconForType(String type) {
+    if (type == 'Tahfidz') return Icons.book;
+    if (type == 'Akhlak') return Icons.favorite;
+    if (type == 'Kehadiran') return Icons.calendar_today;
+    return Icons.class_; 
   }
 
   @override
@@ -585,35 +642,84 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
             ],
           ),
         ),
-        body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-            children: [
-              _buildTabPenilaian(),
-              _buildTabKehadiran(),
-              _buildTabGrafik(),
-              _buildTabRaporSummary(),
-            ],
-          ),
+        body: Stack(
+          children: [
+            _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                children: [
+                  _buildTabPenilaian(),
+                  _buildTabKehadiran(),
+                  _buildTabGrafik(),
+                  _buildTabRaporSummary(),
+                ],
+              ),
+            
+            // Dim Background
+            if (_isFabOpen)
+              GestureDetector(
+                onTap: _toggleFab,
+                child: Container(
+                  color: Colors.black54,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+          ],
+        ),
         floatingActionButton: !isWali
-            ? FloatingActionButton.extended(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => InputPenilaianPage(santri: widget.santri),
-                    ),
-                  );
-                  _loadAllData(); // Refresh on return
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Nilai Baru'),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (_isFabOpen) ..._buildSpeedDialOptions(),
+                  FloatingActionButton(
+                    heroTag: 'detail_fab',
+                    onPressed: _toggleFab,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    child: Icon(_isFabOpen ? Icons.close : Icons.add),
+                  ),
+                ],
               )
             : null,
       ),
     );
+  }
+
+  List<Widget> _buildSpeedDialOptions() {
+    return List.generate(_inputOptions.length, (index) {
+      final type = _inputOptions[index];
+      return ScaleTransition(
+        scale: _fabAnimation,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Label
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                ),
+                child: Text(type, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              FloatingActionButton.small(
+                heroTag: 'option_$index',
+                onPressed: () => _navigateToInput(type),
+                backgroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.primary,
+                child: Icon(_getIconForType(type)),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   // --- TAB 1: Penilaian ---
@@ -648,7 +754,7 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      _finalGrade['score'].toString(),
+                      double.parse(_finalGrade['score'].toString()).toStringAsFixed(0),
                       style: TextStyle(
                         fontSize: 48, 
                         fontWeight: FontWeight.bold,
@@ -704,25 +810,27 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
                     _buildCalculationRow('Akhlak', _scores['Akhlak']!, _weights!.akhlak),
                     _buildCalculationRow('Kehadiran', _scores['Kehadiran']!, _weights!.kehadiran),
                     const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('${_finalGrade['score']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-          ],
-
-          const SizedBox(height: 80), // Space for FAB
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildCalculationRow(String label, double score, double weight) {
+                                                                                            Row(
+                                                                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                                              children: [
+                                                                                                const Text('Total', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                                                                Text(double.parse(_finalGrade['score'].toString()).toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                                                              ],
+                                                                                            )
+                                                                                          ],
+                                                                                        ),
+                                                        
+                                                  ),
+                                              ],
+                                    
+                                              const SizedBox(height: 80), // Space for FAB
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                      
+                                      Widget _buildCalculationRow(String label, double score, double weight) {
+                    
     double contribution = (score * weight);
     // Format to 1 decimal place usually enough
     return Padding(
@@ -872,10 +980,11 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> {
                     'RINGKASAN RAPOR',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 16),
-                  _buildRaporItem('Nilai Akhir', _finalGrade['score'].toString()),
-                  _buildRaporItem('Predikat', _finalGrade['predikat']),
-                  _buildRaporItem('Peringkat', '-'), // Rank requires wider context, keeping placeholder
+                                    const SizedBox(height: 16),
+                                    _buildRaporItem('Nilai Akhir', double.parse(_finalGrade['score'].toString()).toStringAsFixed(0)),
+                                    _buildRaporItem('Predikat', _finalGrade['predikat']),
+                                    _buildRaporItem('Peringkat', '-'),
+                   // Rank requires wider context, keeping placeholder
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
