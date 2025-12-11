@@ -105,7 +105,7 @@ class MapelRepository {
       }
       await batchUpdate.commit(noResult: true);
     } catch (e) {
-      print('Mapel Sync failed: $e');
+      // print('Mapel Sync failed: $e');
     }
   }
 
@@ -135,7 +135,7 @@ class MapelRepository {
       }
       await batch.commit(noResult: true);
     } catch (e) {
-      print('Mapel Fetch failed: $e');
+      // print('Mapel Fetch failed: $e');
     }
   }
 }

@@ -130,7 +130,7 @@ class UserManagementPage extends ConsumerWidget {
                   ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: selectedRole,
+                  initialValue: selectedRole,
                   decoration: const InputDecoration(
                     labelText: 'Peran',
                     border: OutlineInputBorder(),

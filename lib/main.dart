@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'firebase_services.dart';
 import 'package:sipesantren/core/providers/user_provider.dart';
@@ -20,6 +21,8 @@ Future<void> main() async {
   final container = ProviderContainer();
   // Ensure default weights are initialized before the app starts
   await container.read(initializeWeightConfigProvider.future); // Await the future directly
+
+  await initializeDateFormatting('id_ID', null);
 
   runApp(
     UncontrolledProviderScope(
@@ -46,8 +49,8 @@ class _MyAppState extends ConsumerState<MyApp> { // Changed to ConsumerState
   }
 
   Future<void> _checkSession() async {
-    final _auth = ref.read(firebaseServicesProvider);
-    final session = await _auth.getUserSession();
+    final auth = ref.read(firebaseServicesProvider);
+    final session = await auth.getUserSession();
     if (session['id'] != null) {
       final roleToUse = session['role'] ?? 'Ustadz';
       ref.read(userProvider.notifier).login(

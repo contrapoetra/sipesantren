@@ -207,7 +207,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    final _repository = ref.read(santriRepositoryProvider);
+    final repository = ref.read(santriRepositoryProvider);
     
     final filteredSantri = _allSantri.where((santri) {
       final matchesSearch = santri.nama.toLowerCase().contains(_searchQuery) || 
@@ -452,7 +452,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> with SingleTick
                                               ),
                                             );
                                             if (confirm == true) {
-                                              await _repository.deleteSantri(santri.id);
+                                              await repository.deleteSantri(santri.id);
                                               if (context.mounted) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   SnackBar(content: Text('${santri.nama} berhasil dihapus')),

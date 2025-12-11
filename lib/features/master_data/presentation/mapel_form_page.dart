@@ -33,7 +33,7 @@ class _MapelFormPageState extends ConsumerState<MapelFormPage> { // Changed to C
   }
 
   Future<void> _saveMapel() async {
-    final _repository = ref.read(mapelRepositoryProvider); // Get from provider
+    final repository = ref.read(mapelRepositoryProvider); // Get from provider
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
@@ -43,7 +43,7 @@ class _MapelFormPageState extends ConsumerState<MapelFormPage> { // Changed to C
         if (widget.mapel == null) {
           // Add new mapel
           final newMapel = MapelModel(id: '', name: _nameController.text);
-          await _repository.addMapel(newMapel);
+          await repository.addMapel(newMapel);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Mata pelajaran berhasil ditambahkan')),
@@ -52,7 +52,7 @@ class _MapelFormPageState extends ConsumerState<MapelFormPage> { // Changed to C
         } else {
           // Update existing mapel
           final updatedMapel = MapelModel(id: widget.mapel!.id, name: _nameController.text);
-          await _repository.updateMapel(updatedMapel);
+          await repository.updateMapel(updatedMapel);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Mata pelajaran berhasil diperbarui')),

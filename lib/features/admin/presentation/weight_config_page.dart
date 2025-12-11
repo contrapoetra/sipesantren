@@ -35,11 +35,11 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
   }
 
   Future<void> _loadConfig() async {
-    final _repository = ref.read(weightConfigRepositoryProvider);
+    final repository = ref.read(weightConfigRepositoryProvider);
     // Ensure initialized
-    await _repository.initializeWeightConfig();
+    await repository.initializeWeightConfig();
     
-    _repository.getWeightConfig().listen((config) {
+    repository.getWeightConfig().listen((config) {
       if (mounted) {
         setState(() {
           _currentConfig = config;
@@ -72,7 +72,7 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
 
   Future<void> _saveConfig() async {
     if (_formKey.currentState!.validate()) {
-      final _repository = ref.read(weightConfigRepositoryProvider);
+      final repository = ref.read(weightConfigRepositoryProvider);
       
       double t = double.parse(_tahfidzController.text) / 100;
       double a = double.parse(_akhlakController.text) / 100;
@@ -106,7 +106,7 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
         maxSantriPerRoom: maxSantri,
       );
 
-      await _repository.updateWeightConfig(newConfig);
+      await repository.updateWeightConfig(newConfig);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Konfigurasi berhasil disimpan')),

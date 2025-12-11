@@ -235,7 +235,7 @@ class _SantriFormPageState extends ConsumerState<SantriFormPage> {
                   _buildInputCard(
                     child: kelasAsync.when(
                       data: (data) => DropdownButtonFormField<String>(
-                        value: _selectedKelasId,
+                        initialValue: _selectedKelasId,
                         decoration: const InputDecoration(labelText: 'Kelas', border: InputBorder.none),
                         items: [
                           const DropdownMenuItem(value: null, child: Text('Pilih Kelas')),
@@ -255,7 +255,7 @@ class _SantriFormPageState extends ConsumerState<SantriFormPage> {
                       data: (data) {
                         final walis = data.where((u) => u.role == 'Wali' || u.role == 'Wali Santri').toList();
                         return DropdownButtonFormField<String>(
-                          value: _selectedWaliId,
+                          initialValue: _selectedWaliId,
                           decoration: const InputDecoration(labelText: 'Wali Santri', border: InputBorder.none),
                           items: [
                             const DropdownMenuItem(value: null, child: Text('Pilih Wali Santri')),

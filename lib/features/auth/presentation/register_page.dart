@@ -85,7 +85,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         labelText: 'Peran',
                         icon: Icons.category,
                         child: DropdownButtonFormField<String>(
-                          value: _selectedRole,
+                          initialValue: _selectedRole,
                           isExpanded: true,
                           decoration: InputDecoration(
                             border: InputBorder.none,
@@ -321,7 +321,7 @@ class _RegisterInputCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -336,7 +336,7 @@ class _RegisterInputCard extends StatelessWidget {
           labelText: labelText,
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
-          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
+          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
           prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
         ),
         validator: validator,
