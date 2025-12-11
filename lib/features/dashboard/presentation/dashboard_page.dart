@@ -6,6 +6,7 @@ import 'package:sipesantren/features/admin/presentation/user_management_page.dar
 import 'package:sipesantren/features/auth/presentation/login_page.dart';
 import 'package:sipesantren/features/santri/presentation/santri_list_page.dart';
 import 'package:sipesantren/features/kelas/presentation/kelas_list_page.dart';
+import 'package:sipesantren/features/master_data/presentation/mapel_list_page.dart';
 import 'package:sipesantren/firebase_services.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -37,6 +38,26 @@ class DashboardPage extends ConsumerWidget {
                 onTap: () {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const SantriListPage()));
+                },
+              ),
+              const SizedBox(height: 10),
+              DashboardActionCard(
+                icon: Icons.class_,
+                title: 'Kelola Kelas',
+                subtitle: 'Atur kelas, wali kelas, dan pengajar.',
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const KelasListPage()));
+                },
+              ),
+              const SizedBox(height: 10),
+              DashboardActionCard(
+                icon: Icons.library_books,
+                title: 'Kelola Mata Pelajaran',
+                subtitle: 'Tambah dan edit mata pelajaran.',
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const MapelListPage()));
                 },
               ),
               const SizedBox(height: 10),

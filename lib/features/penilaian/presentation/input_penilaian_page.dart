@@ -89,13 +89,6 @@ class _InputPenilaianPageState extends ConsumerState<InputPenilaianPage> {
     super.dispose();
   }
 
-  IconData _getIconForType(String type) {
-    if (type == 'Tahfidz') return Icons.book;
-    if (type == 'Akhlak') return Icons.favorite;
-    if (type == 'Kehadiran') return Icons.calendar_today;
-    return Icons.class_; 
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.santri == null) {

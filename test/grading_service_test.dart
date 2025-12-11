@@ -11,10 +11,12 @@ void main() {
     final defaultWeights = WeightConfigModel(
       id: 'test_weights',
       tahfidz: 0.30,
-      fiqh: 0.20,
-      bahasaArab: 0.20,
       akhlak: 0.20,
       kehadiran: 0.10,
+      mapelWeights: {
+        'Fiqh': 0.20,
+        'Bahasa Arab': 0.20,
+      },
     );
 
     test('calculateTahfidz returns correct average', () {
@@ -57,10 +59,12 @@ void main() {
     test('calculateFinalGrade returns correct final score and predikat', () {
       final result = service.calculateFinalGrade(
         tahfidz: 93,
-        fiqh: 86,
-        bahasaArab: 78,
         akhlak: 94,
         kehadiran: 90,
+        mapelScores: {
+          'Fiqh': 86,
+          'Bahasa Arab': 78,
+        },
         weights: defaultWeights, // Pass the default weights
       );
       // 0.3*93 = 27.9

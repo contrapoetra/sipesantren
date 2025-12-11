@@ -167,7 +167,7 @@ class UserManagementPage extends ConsumerWidget {
                 try {
                   if (isEditing) {
                     await firebaseServices.updateUser(
-                      user!.id,
+                      user.id,
                       nameController.text,
                       emailController.text,
                       selectedRole,

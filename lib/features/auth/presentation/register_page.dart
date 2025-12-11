@@ -86,6 +86,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         icon: Icons.category,
                         child: DropdownButtonFormField<String>(
                           value: _selectedRole,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
@@ -94,9 +95,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                            DropdownMenuItem(value: 'Ustadz', child: Text('Ustadz/Wali Kelas')),
-                            DropdownMenuItem(value: 'Wali', child: Text('Wali Santri')),
+                            DropdownMenuItem(value: 'Admin', child: Text('Admin (Request)', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Ustadz', child: Text('Ustadz/Wali Kelas (Request)', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Wali', child: Text('Wali Santri (Default)', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (value) {
                             setState(() {
@@ -111,6 +112,30 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           },
                         ),
                       ),
+                      if (_selectedRole != 'Wali')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 8),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    "Jika Anda memilih Admin atau Ustadz, akun Anda akan berstatus 'Wali Santri' sementara hingga disetujui oleh Admin.",
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.orange[800]),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 16),
 
                       // Nama Field

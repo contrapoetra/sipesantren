@@ -7,6 +7,8 @@ class SantriModel {
   final String kamarGedung;
   final int kamarNomor;
   final int angkatan;
+  final String? kelasId;
+  final String? waliSantriId;
   // syncStatus is internal to DB, usually not part of the core domain model unless needed for UI indicators
   // We can add it as an optional field
   final int? syncStatus; 
@@ -18,6 +20,8 @@ class SantriModel {
     required this.kamarGedung,
     required this.kamarNomor,
     required this.angkatan,
+    this.kelasId,
+    this.waliSantriId,
     this.syncStatus,
   });
 
@@ -30,6 +34,8 @@ class SantriModel {
       kamarGedung: map['kamarGedung'],
       kamarNomor: map['kamarNomor'],
       angkatan: map['angkatan'],
+      kelasId: map['kelasId'],
+      waliSantriId: map['waliSantriId'],
       syncStatus: map['syncStatus'],
     );
   }
@@ -42,6 +48,8 @@ class SantriModel {
       'kamarGedung': kamarGedung,
       'kamarNomor': kamarNomor,
       'angkatan': angkatan,
+      'kelasId': kelasId,
+      'waliSantriId': waliSantriId,
       // syncStatus is managed by repository usually, but if we pass it:
       if (syncStatus != null) 'syncStatus': syncStatus,
     };
@@ -57,6 +65,8 @@ class SantriModel {
       kamarGedung: data['kamarGedung'] ?? '',
       kamarNomor: data['kamarNomor'] ?? 0,
       angkatan: data['angkatan'] ?? 0,
+      kelasId: data['kelasId'],
+      waliSantriId: data['waliSantriId'],
     );
   }
 
@@ -67,6 +77,8 @@ class SantriModel {
       'kamarGedung': kamarGedung,
       'kamarNomor': kamarNomor,
       'angkatan': angkatan,
+      'kelasId': kelasId,
+      'waliSantriId': waliSantriId,
     };
   }
   
@@ -77,6 +89,8 @@ class SantriModel {
     String? kamarGedung,
     int? kamarNomor,
     int? angkatan,
+    String? kelasId,
+    String? waliSantriId,
     int? syncStatus,
   }) {
     return SantriModel(
@@ -86,6 +100,8 @@ class SantriModel {
       kamarGedung: kamarGedung ?? this.kamarGedung,
       kamarNomor: kamarNomor ?? this.kamarNomor,
       angkatan: angkatan ?? this.angkatan,
+      kelasId: kelasId ?? this.kelasId,
+      waliSantriId: waliSantriId ?? this.waliSantriId,
       syncStatus: syncStatus ?? this.syncStatus,
     );
   }

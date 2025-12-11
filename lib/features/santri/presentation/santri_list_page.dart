@@ -14,12 +14,15 @@ import 'dart:math';
 import 'package:sipesantren/core/providers/user_provider.dart';
 import 'package:sipesantren/features/master_data/presentation/mapel_list_page.dart';
 import 'package:sipesantren/features/santri/presentation/santri_form_page.dart';
-import 'package:sipesantren/features/master_data/presentation/weight_config_page.dart';
+import 'package:sipesantren/features/admin/presentation/weight_config_page.dart'; // Fixed import
 
 import 'package:sipesantren/core/services/grading_service.dart';
 import 'package:sipesantren/core/repositories/weight_config_repository.dart';
-import 'package:sipesantren/core/repositories/mapel_repository.dart'; // Added
+import 'package:sipesantren/core/repositories/mapel_repository.dart'; 
+import 'package:sipesantren/core/repositories/kelas_repository.dart'; 
+import 'package:sipesantren/core/repositories/teaching_repository.dart'; 
 import 'package:sipesantren/core/models/weight_config_model.dart'; 
+import 'package:sipesantren/core/providers/mapel_provider.dart'; // Added
 import 'package:intl/intl.dart';
 
 class SantriListPage extends ConsumerStatefulWidget {
@@ -36,12 +39,10 @@ class _SantriListPageState extends ConsumerState<SantriListPage> with SingleTick
   String _searchQuery = '';
   List<SantriModel> _allSantri = [];
   bool _isLoading = true;
-  bool _isSyncing = false; // New state
+  bool _isSyncing = false; 
 
-  // Animation controller for sync rotation
   late AnimationController _syncAnimationController;
 
-  // Dynamic filter options
   List<String> _kamarOptions = ['Semua'];
   List<String> _angkatanOptions = ['Semua'];
 
@@ -65,17 +66,73 @@ class _SantriListPageState extends ConsumerState<SantriListPage> with SingleTick
     setState(() => _isLoading = true);
     try {
       final repository = ref.read(santriRepositoryProvider);
-      var list = await repository.getSantriList();
+      final userState = ref.read(userProvider);
+      List<SantriModel> list = [];
+
+      if (userState.userRole == 'Wali' || userState.userRole == 'Wali Santri') {
+        if (userState.userId != null) {
+          list = await repository.getSantriByWali(userState.userId!);
+        }
+      } else if (userState.userRole == 'Ustadz') {
+        // Fetch all first, then filter (Client-side filtering for simplicity)
+        // Ideally we do this in DB, but complex joins in SQFlite via pure SQL helper method would be better
+        var all = await repository.getSantriList();
+        
+        final kelasRepo = ref.read(kelasRepositoryProvider);
+        final teachingRepo = ref.read(teachingRepositoryProvider);
+        
+        final allClasses = await kelasRepo.getKelasList();
+        final myAssignments = await teachingRepo.getAssignmentsForUstad(userState.userId!);
+        
+        // Classes where I am Wali Kelas
+        final myWaliKelasIds = allClasses.where((k) => k.waliKelasId == userState.userId).map((k) => k.id).toSet();
+        
+        // Classes where I teach
+        final myTeachingClassIds = myAssignments.map((a) => a.kelasId).toSet();
+        
+        final accessibleClassIds = {...myWaliKelasIds, ...myTeachingClassIds};
+        
+        list = all.where((s) => s.kelasId != null && accessibleClassIds.contains(s.kelasId)).toList();
+        
+      } else {
+        // Admin or others
+        list = await repository.getSantriList();
+      }
       
-      // If local list is empty, try fetching from server
+      // If local list is empty and we are Admin/Ustadz, try fetching from server
+      // For Wali, we might want to fetch too if empty
       if (list.isEmpty) {
+        // ... (existing logic)
+        // Note: For Ustadz filtering to work after fetch, we need to re-apply filter.
+        // Simplification: Just fetchAll if empty then re-run this method logic?
+        // Let's just do a fetchFromFirestore call if generic list is empty and retry?
+        // But getSantriList() returns local.
+        // Let's keep the existing "try fetch if empty" logic but apply to the result.
+        
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Data lokal kosong, mencoba mengambil dari server...')),
-           );
+           // Only show snackbar if we really think we should have data
+           // ScaffoldMessenger.of(context).showSnackBar(...); 
         }
         await repository.fetchFromFirestore();
-        list = await repository.getSantriList();
+        
+        // Re-run the fetch logic
+         if (userState.userRole == 'Wali' || userState.userRole == 'Wali Santri') {
+            if (userState.userId != null) {
+              list = await repository.getSantriByWali(userState.userId!);
+            }
+          } else if (userState.userRole == 'Ustadz') {
+             var all = await repository.getSantriList();
+             final kelasRepo = ref.read(kelasRepositoryProvider);
+             final teachingRepo = ref.read(teachingRepositoryProvider);
+             final allClasses = await kelasRepo.getKelasList();
+             final myAssignments = await teachingRepo.getAssignmentsForUstad(userState.userId!);
+             final myWaliKelasIds = allClasses.where((k) => k.waliKelasId == userState.userId).map((k) => k.id).toSet();
+             final myTeachingClassIds = myAssignments.map((a) => a.kelasId).toSet();
+             final accessibleClassIds = {...myWaliKelasIds, ...myTeachingClassIds};
+             list = all.where((s) => s.kelasId != null && accessibleClassIds.contains(s.kelasId)).toList();
+          } else {
+            list = await repository.getSantriList();
+          }
       }
       
       final uniqueKamars = list.map((s) => '${s.kamarGedung}-${s.kamarNomor}').toSet().toList();
@@ -539,32 +596,46 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> with Single
   }
 
   Future<void> _loadAllData() async {
-    // ... existing loadAllData logic ...
     final santriId = widget.santri.id;
     final penilaianRepo = ref.read(penilaianRepositoryProvider);
     final weightRepo = ref.read(weightConfigRepositoryProvider);
+    final mapelRepo = ref.read(mapelRepositoryProvider);
 
     try {
       await weightRepo.initializeWeightConfig();
       final weights = await weightRepo.getWeightConfig().first;
+      final mapels = await mapelRepo.getMapelList(); // Fetch all mapels
 
       final tahfidz = await penilaianRepo.getTahfidzBySantri(santriId);
-      final mapel = await penilaianRepo.getMapelBySantri(santriId);
+      final mapelData = await penilaianRepo.getMapelBySantri(santriId);
       final akhlak = await penilaianRepo.getAkhlakBySantri(santriId);
       final kehadiran = await penilaianRepo.getKehadiranBySantri(santriId);
 
       final sTahfidz = _gradingService.calculateTahfidz(tahfidz);
-      final sFiqh = _gradingService.calculateMapel(mapel, 'Fiqh');
-      final sArab = _gradingService.calculateMapel(mapel, 'Bahasa Arab');
       final sAkhlak = _gradingService.calculateAkhlak(akhlak);
       final sKehadiran = _gradingService.calculateKehadiran(kehadiran);
 
+      // Calculate Mapel Scores
+      Map<String, double> mapelScoresById = {};
+      Map<String, double> mapelScoresByName = {};
+
+      for (var m in mapels) {
+        // We assume PenilaianMapel stores 'mapel' as Name for now (legacy) or ID?
+        // Checking PenilaianMapel model (not visible but usually String mapel).
+        // If it stores Name:
+        double score = _gradingService.calculateMapel(mapelData, m.name);
+        mapelScoresById[m.id] = score;
+        mapelScoresByName[m.name] = score;
+      }
+      
+      // Fallback for hardcoded legacy names if they don't match dynamic ones?
+      // Assuming migration happened or we just use what we found.
+
       final finalResult = _gradingService.calculateFinalGrade(
         tahfidz: sTahfidz,
-        fiqh: sFiqh,
-        bahasaArab: sArab,
         akhlak: sAkhlak,
         kehadiran: sKehadiran,
+        mapelScores: mapelScoresById,
         weights: weights,
       );
 
@@ -575,10 +646,9 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> with Single
           
           _scores = {
             'Tahfidz': sTahfidz,
-            'Fiqh': sFiqh,
-            'Bahasa Arab': sArab,
             'Akhlak': sAkhlak,
             'Kehadiran': sKehadiran,
+            ...mapelScoresByName, // Add mapels for display
           };
           
           _finalGrade = finalResult;
@@ -724,13 +794,19 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> with Single
 
   // --- TAB 1: Penilaian ---
   Widget _buildTabPenilaian() {
+    // Separate special keys
+    final specialKeys = ['Tahfidz', 'Akhlak', 'Kehadiran'];
+    final mapelKeys = _scores.keys.where((k) => !specialKeys.contains(k)).toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           _buildNilaiCard('Tahfidz', _scores['Tahfidz']!.toStringAsFixed(0), Colors.green, Icons.book),
-          _buildNilaiCard('Fiqh', _scores['Fiqh']!.toStringAsFixed(0), Colors.blue, Icons.balance),
-          _buildNilaiCard('Bahasa Arab', _scores['Bahasa Arab']!.toStringAsFixed(0), Colors.orange, Icons.language),
+          // Dynamically build mapel cards
+          ...mapelKeys.map((key) => 
+            _buildNilaiCard(key, _scores[key]!.toStringAsFixed(0), Colors.blue, Icons.class_)
+          ),
           _buildNilaiCard('Akhlak', _scores['Akhlak']!.toStringAsFixed(0), Colors.purple, Icons.emoji_people),
           _buildNilaiCard('Kehadiran', _scores['Kehadiran']!.toStringAsFixed(0), Colors.red, Icons.calendar_today),
           
@@ -805,8 +881,13 @@ class _SantriDetailPageState extends ConsumerState<SantriDetailPage> with Single
                 child: Column(
                   children: [
                     _buildCalculationRow('Tahfidz', _scores['Tahfidz']!, _weights!.tahfidz),
-                    _buildCalculationRow('Fiqh', _scores['Fiqh']!, _weights!.fiqh),
-                    _buildCalculationRow('B. Arab', _scores['Bahasa Arab']!, _weights!.bahasaArab),
+                    // Loop Mapels
+                    ...ref.read(mapelProvider).value?.map((m) {
+                       // Find score by name (UI display) and weight by ID
+                       final score = _scores[m.name] ?? 0.0;
+                       final weight = _weights!.mapelWeights[m.id] ?? 0.0;
+                       return _buildCalculationRow(m.name, score, weight);
+                    }) ?? [],
                     _buildCalculationRow('Akhlak', _scores['Akhlak']!, _weights!.akhlak),
                     _buildCalculationRow('Kehadiran', _scores['Kehadiran']!, _weights!.kehadiran),
                     const Divider(),

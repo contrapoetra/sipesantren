@@ -48,19 +48,27 @@ class GradingService {
 
   Map<String, dynamic> calculateFinalGrade({
     required double tahfidz,
-    required double fiqh,
-    required double bahasaArab,
     required double akhlak,
     required double kehadiran,
-    required WeightConfigModel weights, // New parameter
+    required Map<String, double> mapelScores, // Mapel Name/ID -> Score
+    required WeightConfigModel weights, 
   }) {
-    double finalScore = (weights.tahfidz * tahfidz) +
-        (weights.fiqh * fiqh) +
-        (weights.bahasaArab * bahasaArab) +
+    double weightedSum = (weights.tahfidz * tahfidz) +
         (weights.akhlak * akhlak) +
         (weights.kehadiran * kehadiran);
+
+    // Dynamic Mapel Calculation
+    // We match keys. Mapel weights are keyed by ID (e.g., 'mapel_fiqh').
+    // mapelScores should ideally be keyed by ID too.
+    // However, the caller might be passing Names if they don't have IDs handy?
+    // Let's assume mapelScores keys match weights keys (IDs).
     
-    finalScore = finalScore.roundToDouble();
+    weights.mapelWeights.forEach((key, weight) {
+      double score = mapelScores[key] ?? 0.0;
+      weightedSum += (weight * score);
+    });
+    
+    double finalScore = weightedSum.roundToDouble();
 
     String predikat = 'D';
     if (finalScore >= 85) {

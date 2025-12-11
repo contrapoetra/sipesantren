@@ -1,135 +1,126 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sipesantren/core/models/mapel_model.dart';
-import 'package:sipesantren/core/repositories/mapel_repository.dart';
-import 'package:sipesantren/features/master_data/presentation/mapel_form_page.dart';
+import 'package:sipesantren/core/providers/mapel_provider.dart';
 
-class MapelListPage extends ConsumerStatefulWidget {
+class MapelListPage extends ConsumerWidget {
   const MapelListPage({super.key});
 
   @override
-  ConsumerState<MapelListPage> createState() => _MapelListPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mapelAsyncValue = ref.watch(mapelProvider);
 
-class _MapelListPageState extends ConsumerState<MapelListPage> {
-  List<MapelModel> _mapelList = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final repository = ref.read(mapelRepositoryProvider);
-      final list = await repository.getMapelList();
-      if (mounted) {
-        setState(() {
-          _mapelList = list;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat data: $e')),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final _repository = ref.read(mapelRepositoryProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Mata Pelajaran'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        title: const Text('Kelola Mata Pelajaran'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.read(mapelProvider.notifier).refresh();
+            },
+          ),
+        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _mapelList.isEmpty
-              ? const Center(child: Text('Belum ada mata pelajaran.'))
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: ListView.builder(
-                    itemCount: _mapelList.length,
-                    itemBuilder: (context, index) {
-                      final mapel = _mapelList[index];
-                      return Dismissible(
-                        key: Key(mapel.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        confirmDismiss: (direction) async {
-                          return await showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text("Konfirmasi Hapus"),
-                                content: Text("Anda yakin ingin menghapus '${mapel.name}'?"),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(false),
-                                    child: const Text("BATAL"),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () => Navigator.of(context).pop(true),
-                                    child: const Text("HAPUS"),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        onDismissed: (direction) async {
-                          await _repository.deleteMapel(mapel.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('${mapel.name} berhasil dihapus')),
-                            );
-                            _loadData();
-                          }
-                        },
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          child: ListTile(
-                            title: Text(mapel.name),
-                            trailing: const Icon(Icons.edit),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MapelFormPage(mapel: mapel),
-                                ),
-                              );
-                              _loadData();
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+      body: mapelAsyncValue.when(
+        data: (mapels) {
+          if (mapels.isEmpty) {
+            return const Center(child: Text('Belum ada data mata pelajaran.'));
+          }
+          return ListView.builder(
+            itemCount: mapels.length,
+            itemBuilder: (context, index) {
+              final mapel = mapels[index];
+              return ListTile(
+                title: Text(mapel.name),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    _showDeleteDialog(context, ref, mapel);
+                  },
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MapelFormPage()),
+                onTap: () {
+                  _showAddEditDialog(context, ref, mapel: mapel);
+                },
+              );
+            },
           );
-          _loadData();
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text('Error: $e')),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddEditDialog(context, ref),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  void _showAddEditDialog(BuildContext context, WidgetRef ref, {MapelModel? mapel}) {
+    final nameController = TextEditingController(text: mapel?.name);
+    final isEditing = mapel != null;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(isEditing ? 'Edit Mapel' : 'Tambah Mapel'),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: 'Nama Mata Pelajaran'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                if (name.isEmpty) return;
+
+                if (isEditing) {
+                  ref.read(mapelProvider.notifier).updateMapel(
+                        mapel.copyWith(name: name),
+                      );
+                } else {
+                  ref.read(mapelProvider.notifier).addMapel(
+                        MapelModel(id: '', name: name),
+                      );
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, MapelModel mapel) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Hapus Mapel'),
+          content: Text('Hapus ${mapel.name}?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () {
+                ref.read(mapelProvider.notifier).deleteMapel(mapel.id);
+                Navigator.pop(context);
+              },
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

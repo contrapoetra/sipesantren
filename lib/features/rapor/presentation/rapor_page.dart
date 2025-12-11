@@ -1,37 +1,38 @@
-import 'dart:io'; // New import for File
-import 'dart:typed_data'; // New import for Uint8List
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // New import
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:sipesantren/core/models/santri_model.dart';
 import 'package:sipesantren/core/repositories/penilaian_repository.dart';
 import 'package:sipesantren/core/services/grading_service.dart';
-import 'package:share_plus/share_plus.dart'; // New import
-import 'package:path_provider/path_provider.dart'; // New import
-import 'package:sipesantren/core/models/weight_config_model.dart'; // New import
-import 'package:sipesantren/core/repositories/weight_config_repository.dart'; // New import
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sipesantren/core/models/weight_config_model.dart';
+import 'package:sipesantren/core/repositories/weight_config_repository.dart';
+import 'package:sipesantren/core/repositories/mapel_repository.dart'; // Added
 
 class RaporPage extends ConsumerStatefulWidget {
- // Changed to ConsumerStatefulWidget
   final SantriModel? santri;
   const RaporPage({super.key, this.santri});
 
   @override
-  ConsumerState<RaporPage> createState() => _RaporPageState(); // Changed to ConsumerState
+  ConsumerState<RaporPage> createState() => _RaporPageState();
 }
 
-class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerState
-  // Removed direct instantiation, now obtained from provider
+class _RaporPageState extends ConsumerState<RaporPage> {
   final GradingService _gradingService = GradingService();
-  // Removed direct instantiation, now obtained from provider
 
   Map<String, double> _scores = {};
   Map<String, dynamic> _finalGrade = {};
   String _akhlakCatatan = '';
-  WeightConfigModel? _weights; // New
+  WeightConfigModel? _weights;
   bool _loading = true;
+  
+  // Need to store mapel info for display (name) and calculation (id)
+  Map<String, String> _mapelIdToName = {};
 
   @override
   void initState() {
@@ -43,38 +44,45 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
 
   Future<void> _loadData() async {
     final santriId = widget.santri!.id;
-    final _repository = ref.read(penilaianRepositoryProvider); // Get from provider
-    final _weightRepository = ref.read(weightConfigRepositoryProvider); // Get from provider
-    // Fetch weights first
-    await _weightRepository.initializeWeightConfig(); // Ensure default exists
-    // getWeightConfig returns Stream, so .first is correct
-    _weights = await _weightRepository.getWeightConfig().first; 
+    final _repository = ref.read(penilaianRepositoryProvider);
+    final _weightRepository = ref.read(weightConfigRepositoryProvider);
+    final _mapelRepository = ref.read(mapelRepositoryProvider);
 
-    // Fetch all data
-    // Repositories return Future<List> now, so we await them directly.
+    await _weightRepository.initializeWeightConfig(); 
+    _weights = await _weightRepository.getWeightConfig().first;
+    final mapels = await _mapelRepository.getMapelList();
+    
+    _mapelIdToName = {for (var m in mapels) m.id: m.name};
+
     final tahfidzList = await _repository.getTahfidzBySantri(santriId);
     final mapelList = await _repository.getMapelBySantri(santriId);
     final akhlakList = await _repository.getAkhlakBySantri(santriId);
     final kehadiranList = await _repository.getKehadiranBySantri(santriId);
 
-    // Extract latest Akhlak note if available
     if (akhlakList.isNotEmpty) {
       _akhlakCatatan = akhlakList.last.catatan; 
     }
 
-    // Calculate
     final tahfidzScore = _gradingService.calculateTahfidz(tahfidzList);
-    final fiqhScore = _gradingService.calculateMapel(mapelList, 'Fiqh');
-    final bahasaArabScore = _gradingService.calculateMapel(mapelList, 'Bahasa Arab');
     final akhlakScore = _gradingService.calculateAkhlak(akhlakList);
     final kehadiranScore = _gradingService.calculateKehadiran(kehadiranList);
+    
+    // Calculate Mapel Scores
+    Map<String, double> mapelScoresById = {};
+    Map<String, double> mapelScoresByName = {};
+    
+    for (var m in mapels) {
+      // Assuming 'mapel' field in PenilaianMapel is Name
+      double val = _gradingService.calculateMapel(mapelList, m.name);
+      mapelScoresById[m.id] = val;
+      mapelScoresByName[m.name] = val;
+    }
 
     final finalResult = _gradingService.calculateFinalGrade(
       tahfidz: tahfidzScore,
-      fiqh: fiqhScore,
-      bahasaArab: bahasaArabScore,
       akhlak: akhlakScore,
       kehadiran: kehadiranScore,
+      mapelScores: mapelScoresById,
       weights: _weights!, 
     );
 
@@ -82,10 +90,9 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
       setState(() {
         _scores = {
           'Tahfidz': tahfidzScore,
-          'Fiqh': fiqhScore,
-          'Bahasa Arab': bahasaArabScore,
           'Akhlak': akhlakScore,
           'Kehadiran': kehadiranScore,
+          ...mapelScoresByName,
         };
         _finalGrade = finalResult;
         _loading = false;
@@ -217,11 +224,17 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildNilaiDetailRow('Tahfidz (30%)', '${_scores['Tahfidz']}'),
-                    _buildNilaiDetailRow('Fiqh (20%)', '${_scores['Fiqh']}'),
-                    _buildNilaiDetailRow('Bahasa Arab (20%)', '${_scores['Bahasa Arab']}'),
-                    _buildNilaiDetailRow('Akhlak (20%)', '${_scores['Akhlak']}'),
-                    _buildNilaiDetailRow('Kehadiran (10%)', '${_scores['Kehadiran']}'),
+                    _buildNilaiDetailRow('Tahfidz (${(_weights!.tahfidz * 100).round()}%)', '${_scores['Tahfidz']}'),
+                    
+                    // Dynamic Mapels
+                    ..._weights!.mapelWeights.entries.map((e) {
+                      final name = _mapelIdToName[e.key] ?? e.key;
+                      final score = _scores[name] ?? 0.0;
+                      return _buildNilaiDetailRow('$name (${(e.value * 100).round()}%)', '$score');
+                    }),
+                    
+                    _buildNilaiDetailRow('Akhlak (${(_weights!.akhlak * 100).round()}%)', '${_scores['Akhlak']}'),
+                    _buildNilaiDetailRow('Kehadiran (${(_weights!.kehadiran * 100).round()}%)', '${_scores['Kehadiran']}'),
                     const Divider(),
                     _buildNilaiDetailRow('NILAI AKHIR', '${_finalGrade['score']}', isBold: true),
                     if (_akhlakCatatan.isNotEmpty) ...[
@@ -277,7 +290,7 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
             border: Border.all(color: color, width: 3),
           ),
@@ -348,6 +361,21 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
   Future<Uint8List> _generatePdfDocument() async {
     final doc = pw.Document();
     
+    // Prepare table data
+    final List<List<String>> tableData = [
+      ['Mata Pelajaran', 'Nilai', 'Bobot'],
+      ['Tahfidz', '${_scores['Tahfidz']}', '${(_weights!.tahfidz * 100).toStringAsFixed(0)}%'],
+    ];
+
+    _weights!.mapelWeights.forEach((id, weight) {
+      final name = _mapelIdToName[id] ?? id;
+      final score = _scores[name] ?? 0.0;
+      tableData.add([name, '$score', '${(weight * 100).toStringAsFixed(0)}%']);
+    });
+
+    tableData.add(['Akhlak', '${_scores['Akhlak']}', '${(_weights!.akhlak * 100).toStringAsFixed(0)}%']);
+    tableData.add(['Kehadiran', '${_scores['Kehadiran']}', '${(_weights!.kehadiran * 100).toStringAsFixed(0)}%']);
+
     doc.addPage(
       pw.Page(
         build: (pw.Context context) {
@@ -364,14 +392,7 @@ class _RaporPageState extends ConsumerState<RaporPage> { // Changed to ConsumerS
               pw.Text('Kamar: ${widget.santri!.kamarGedung}-${widget.santri!.kamarNomor}'),
               pw.SizedBox(height: 30),
               
-              pw.TableHelper.fromTextArray(context: context, data: <List<String>>[
-                <String>['Mata Pelajaran', 'Nilai', 'Bobot'],
-                <String>['Tahfidz', '${_scores['Tahfidz']}', '${(_weights!.tahfidz * 100).toStringAsFixed(0)}%'],
-                <String>['Fiqh', '${_scores['Fiqh']}', '${(_weights!.fiqh * 100).toStringAsFixed(0)}%'],
-                <String>['Bahasa Arab', '${_scores['Bahasa Arab']}', '${(_weights!.bahasaArab * 100).toStringAsFixed(0)}%'],
-                <String>['Akhlak', '${_scores['Akhlak']}', '${(_weights!.akhlak * 100).toStringAsFixed(0)}%'],
-                <String>['Kehadiran', '${_scores['Kehadiran']}', '${(_weights!.kehadiran * 100).toStringAsFixed(0)}%'],
-              ]),
+              pw.TableHelper.fromTextArray(context: context, data: tableData),
               
 pw.Divider(),
 pw.SizedBox(height: 10),

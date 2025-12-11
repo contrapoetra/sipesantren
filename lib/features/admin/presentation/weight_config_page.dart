@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sipesantren/core/models/weight_config_model.dart';
 import 'package:sipesantren/core/repositories/weight_config_repository.dart';
+import 'package:sipesantren/core/providers/mapel_provider.dart'; // Added
 
 class WeightConfigPage extends ConsumerStatefulWidget {
   const WeightConfigPage({super.key});
@@ -13,13 +14,14 @@ class WeightConfigPage extends ConsumerStatefulWidget {
 class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
   final _formKey = GlobalKey<FormState>();
   
-  // Controllers for weights
+  // Controllers for static weights
   final _tahfidzController = TextEditingController();
-  final _fiqhController = TextEditingController();
-  final _bahasaArabController = TextEditingController();
   final _akhlakController = TextEditingController();
   final _kehadiranController = TextEditingController();
   
+  // Dynamic controllers for mapels
+  final Map<String, TextEditingController> _mapelControllers = {};
+
   // Controller for settings
   final _maxSantriController = TextEditingController();
 
@@ -42,11 +44,14 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
         setState(() {
           _currentConfig = config;
           _tahfidzController.text = (config.tahfidz * 100).toStringAsFixed(0);
-          _fiqhController.text = (config.fiqh * 100).toStringAsFixed(0);
-          _bahasaArabController.text = (config.bahasaArab * 100).toStringAsFixed(0);
           _akhlakController.text = (config.akhlak * 100).toStringAsFixed(0);
           _kehadiranController.text = (config.kehadiran * 100).toStringAsFixed(0);
           _maxSantriController.text = config.maxSantriPerRoom.toString();
+          
+          // Populate dynamic mapels will happen in build when provider data is available
+          // But we can pre-fill map if we want to retain values, strictly logic is better in build or separate init
+          // For now, we rely on the provider in build to create controllers if missing.
+          
           _isLoading = false;
         });
       }
@@ -56,11 +61,12 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
   @override
   void dispose() {
     _tahfidzController.dispose();
-    _fiqhController.dispose();
-    _bahasaArabController.dispose();
     _akhlakController.dispose();
     _kehadiranController.dispose();
     _maxSantriController.dispose();
+    for (var controller in _mapelControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -69,13 +75,20 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
       final _repository = ref.read(weightConfigRepositoryProvider);
       
       double t = double.parse(_tahfidzController.text) / 100;
-      double f = double.parse(_fiqhController.text) / 100;
-      double b = double.parse(_bahasaArabController.text) / 100;
       double a = double.parse(_akhlakController.text) / 100;
       double k = double.parse(_kehadiranController.text) / 100;
       int maxSantri = int.parse(_maxSantriController.text);
 
-      double total = t + f + b + a + k;
+      Map<String, double> mapelWeights = {};
+      double mapelSum = 0;
+      
+      _mapelControllers.forEach((id, controller) {
+        double val = double.parse(controller.text) / 100;
+        mapelWeights[id] = val;
+        mapelSum += val;
+      });
+
+      double total = t + a + k + mapelSum;
       // Allow small epsilon error
       if ((total - 1.0).abs() > 0.01) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -87,10 +100,9 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
       final newConfig = WeightConfigModel(
         id: _currentConfig!.id,
         tahfidz: t,
-        fiqh: f,
-        bahasaArab: b,
         akhlak: a,
         kehadiran: k,
+        mapelWeights: mapelWeights,
         maxSantriPerRoom: maxSantri,
       );
 
@@ -106,8 +118,20 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    final mapelsAsync = ref.watch(mapelProvider);
+
+    if (_isLoading || mapelsAsync.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Initialize mapel controllers if needed
+    if (mapelsAsync.hasValue) {
+      for (var mapel in mapelsAsync.value!) {
+        if (!_mapelControllers.containsKey(mapel.id)) {
+          double weight = _currentConfig?.mapelWeights[mapel.id] ?? 0.0;
+          _mapelControllers[mapel.id] = TextEditingController(text: (weight * 100).toStringAsFixed(0));
+        }
+      }
     }
 
     return Scaffold(
@@ -127,10 +151,17 @@ class _WeightConfigPageState extends ConsumerState<WeightConfigPage> {
               ),
               const SizedBox(height: 16),
               _buildInput('Tahfidz', _tahfidzController),
-              _buildInput('Fiqh', _fiqhController),
-              _buildInput('Bahasa Arab', _bahasaArabController),
               _buildInput('Akhlak', _akhlakController),
               _buildInput('Kehadiran', _kehadiranController),
+              
+              const SizedBox(height: 16),
+              const Text('Mata Pelajaran:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              
+              if (mapelsAsync.hasValue)
+                ...mapelsAsync.value!.map((mapel) {
+                  return _buildInput(mapel.name, _mapelControllers[mapel.id]!);
+                }),
               
               const Divider(height: 32),
               

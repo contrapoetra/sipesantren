@@ -31,10 +31,12 @@ class WeightConfigRepository {
       final defaultConfig = WeightConfigModel(
         id: _documentId,
         tahfidz: 0.30,
-        fiqh: 0.20,
-        bahasaArab: 0.20,
         akhlak: 0.20,
         kehadiran: 0.10,
+        mapelWeights: {
+          'mapel_fiqh': 0.20,
+          'mapel_ba': 0.20,
+        },
         maxSantriPerRoom: 6,
       );
       await _db.collection(WeightConfigModel.collectionName).doc(_documentId).set(defaultConfig.toFirestore());

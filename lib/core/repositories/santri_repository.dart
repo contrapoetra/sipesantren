@@ -17,12 +17,32 @@ class SantriRepository {
   // 1. Get List from SQLite
   Future<List<SantriModel>> getSantriList() async {
     final db = await _dbHelper.database;
-    // Get all except those marked for deletion (status 2) if we hide them locally immediately
-    // Or we show them but maybe grayed out? Usually we hide them.
     final List<Map<String, dynamic>> maps = await db.query(
       'santri',
       where: 'syncStatus != ?',
-      whereArgs: [2], // 2 = deleted
+      whereArgs: [2],
+      orderBy: 'nama ASC',
+    );
+    return List.generate(maps.length, (i) => SantriModel.fromMap(maps[i]));
+  }
+
+  Future<List<SantriModel>> getSantriByKelas(String kelasId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'santri',
+      where: 'kelasId = ? AND syncStatus != ?',
+      whereArgs: [kelasId, 2],
+      orderBy: 'nama ASC',
+    );
+    return List.generate(maps.length, (i) => SantriModel.fromMap(maps[i]));
+  }
+
+  Future<List<SantriModel>> getSantriByWali(String waliId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'santri',
+      where: 'waliSantriId = ? AND syncStatus != ?',
+      whereArgs: [waliId, 2],
       orderBy: 'nama ASC',
     );
     return List.generate(maps.length, (i) => SantriModel.fromMap(maps[i]));
