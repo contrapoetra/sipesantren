@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sipesantren/core/models/kelas_model.dart';
 import 'package:sipesantren/core/providers/kelas_provider.dart';
+import 'package:sipesantren/core/providers/user_provider.dart';
 import 'package:sipesantren/features/kelas/presentation/kelas_detail_page.dart';
 
 class KelasListPage extends ConsumerWidget {
@@ -51,10 +52,10 @@ class KelasListPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(child: Text('Error: $e')),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: ref.watch(userProvider).userRole == 'Admin' ? FloatingActionButton(
         onPressed: () => _showAddDialog(context, ref),
         child: const Icon(Icons.add),
-      ),
+      ) : null,
     );
   }
 

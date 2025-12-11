@@ -422,7 +422,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> with SingleTick
                                       ),
                                   ],
                                 ),
-                                trailing: (ref.watch(userProvider).userRole != 'Wali' && ref.watch(userProvider).userRole != 'Wali Santri')
+                                trailing: (ref.watch(userProvider).userRole == 'Admin')
                                     ? PopupMenuButton<String>(
                                         onSelected: (value) async {
                                           if (value == 'edit') {
@@ -503,7 +503,7 @@ class _SantriListPageState extends ConsumerState<SantriListPage> with SingleTick
           ),
         ],
       ),
-      floatingActionButton: (ref.watch(userProvider).userRole != 'Wali' && ref.watch(userProvider).userRole != 'Wali Santri')
+      floatingActionButton: (ref.watch(userProvider).userRole == 'Admin')
           ? FloatingActionButton(
               onPressed: () async {
                 await Navigator.push(
