@@ -256,10 +256,11 @@ class _SantriFormPageState extends ConsumerState<SantriFormPage> {
                         final walis = data.where((u) => u.role == 'Wali' || u.role == 'Wali Santri').toList();
                         return DropdownButtonFormField<String>(
                           initialValue: _selectedWaliId,
+                          isExpanded: true,
                           decoration: const InputDecoration(labelText: 'Wali Santri', border: InputBorder.none),
                           items: [
                             const DropdownMenuItem(value: null, child: Text('Pilih Wali Santri')),
-                            ...walis.map((u) => DropdownMenuItem(value: u.id, child: Text('${u.name} (${u.email})'))),
+                            ...walis.map((u) => DropdownMenuItem(value: u.id, child: Text('${u.name} (${u.email})', overflow: TextOverflow.ellipsis))),
                           ],
                           onChanged: (val) => setState(() => _selectedWaliId = val),
                         );
